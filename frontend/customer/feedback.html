@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rate Your Order — Hooda's Bakery</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="js/config.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="brand">🎂 Hooda's Bakery</a>
+  </nav>
+
+  <main style="padding: 20px;">
+    <div class="message-page" style="max-width: 550px; margin: 40px auto; text-align: left;">
+      <h2 style="text-align: center; margin-bottom: 8px;">We value your feedback! 🎂</h2>
+      <p style="text-align: center; color: #666; margin-bottom: 32px;">Please rate your experience with Hooda's Bakery so we can serve you better.</p>
+      
+      <form id="feedbackForm" onsubmit="submitFeedback(event)">
+        <label style="text-align: center; display: block; margin-bottom: 8px;">Overall Rating</label>
+        <!-- Star Rating -->
+        <div class="star-rating">
+          <input type="radio" id="star5" name="rating" value="5" required/><label for="star5">★</label>
+          <input type="radio" id="star4" name="rating" value="4"/><label for="star4">★</label>
+          <input type="radio" id="star3" name="rating" value="3"/><label for="star3">★</label>
+          <input type="radio" id="star2" name="rating" value="2"/><label for="star2">★</label>
+          <input type="radio" id="star1" name="rating" value="1"/><label for="star1">★</label>
+        </div>
+
+        <label style="margin-top: 24px;">Your Comments / Suggestions
+          <textarea id="comment" rows="4" placeholder="Tell us what you liked, or where we can improve..." required style="margin-top: 6px;"></textarea>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; margin-top: 16px; cursor: pointer;">
+          <input type="checkbox" id="wouldRecommend" style="width: auto; margin-top: 0; cursor: pointer;" checked/>
+          Would you recommend us to friends and family?
+        </label>
+
+        <button type="submit" class="btn-primary" id="submitBtn" style="width: 100%; border-radius: 8px; margin-top: 24px;">Submit Review →</button>
+      </form>
+      
+      <div id="successMessage" style="display: none; text-align: center; padding: 20px 0;">
+        <div style="font-size: 48px; margin-bottom: 12px;">🌟</div>
+        <h3 style="color: var(--teal); font-weight: 800; margin-bottom: 8px;">Review Submitted!</h3>
+        <p>Thank you for taking the time to share your feedback. We appreciate your support!</p>
+        <a href="index.html" class="btn-primary" style="margin-top: 16px; display: inline-block;">Go to Home</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" style="margin-top: 100px;">
+    <p>© 2026 Hooda's Bakery · Delivering Smiles, One Slice at a Time 🎂</p>
+  </footer>
+
+  <script>
+    const API = CONFIG.API_BASE;
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId'); // Database ObjectId
+
+    if (!orderId) {
+      alert("Invalid feedback link. Please check your email invitation.");
+      document.getElementById('feedbackForm').innerHTML = '<p style="color:red; text-align:center; font-weight:bold;">Missing Order Reference Parameter.</p>';
+    }
+
+    async function submitFeedback(e) {
+      e.preventDefault();
+      
+      const ratingVal = document.querySelector('input[name="rating"]:checked').value;
+      const commentVal = document.getElementById('comment').value;
+      const wouldRecommendVal = document.getElementById('wouldRecommend').checked;
+      
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch(`${API}/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderId,
+            rating: parseInt(ratingVal),
+            comment: commentVal,
+            wouldRecommend: wouldRecommendVal
+          })
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+          document.getElementById('feedbackForm').style.display = 'none';
+          document.getElementById('successMessage').style.display = 'block';
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (err) {
+        alert("Failed to submit feedback: " + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Submit Review →';
+      }
+    }
+  </script>
+
+  <!-- Smart Chatbot Script -->
+  <script src="js/chatbot.js"></script>
+</body>
+</html>

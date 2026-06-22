@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Placed Successfully! — Hooda's Bakery</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="brand">🎂 Hooda's Bakery</a>
+    <div class="nav-links">
+      <a href="menu.html">Menu</a>
+    </div>
+  </nav>
+
+  <main style="padding: 20px;">
+    <div class="message-page">
+      <div class="icon-success">🎉</div>
+      <h2>Payment Verified!</h2>
+      <p style="font-size: 18px; font-weight: 600; color: var(--teal); margin-bottom: 8px;">Order Reference: <span id="refId">-</span></p>
+      <p>Thank you for shopping with Hooda's Bakery! Your order is confirmed and our baking team is already preparing details.</p>
+      <p style="color: #666; font-size: 14px; margin-bottom: 32px;">📝 A professional **PDF Invoice** has been generated and sent to your email address. You will receive real-time updates as your order is processed.</p>
+      
+      <div style="display:flex; justify-content:center; gap:16px;">
+        <a href="index.html" class="btn-primary" style="margin-right:0;">Back to Home</a>
+        <a href="menu.html" class="btn-secondary" style="border-color:var(--navy); color:var(--navy);">View Menu</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" style="margin-top: 120px;">
+    <p>© 2026 Hooda's Bakery · Delivering Smiles, One Slice at a Time 🎂</p>
+  </footer>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
+    if (orderId) {
+      document.getElementById('refId').innerText = orderId;
+    }
+  </script>
+
+  <!-- Smart Chatbot Script -->
+  <script src="js/config.js"></script>
+  <script src="js/chatbot.js"></script>
+</body>
+</html>

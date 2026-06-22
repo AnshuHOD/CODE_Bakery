@@ -1,0 +1,13 @@
+# Node dependencies
+node_modules/
+
+# Local env files
+.env
+
+# Generated invoices
+backend/invoices/
+*.pdf
+
+# Production build outputs
+dist/
+.DS_Store

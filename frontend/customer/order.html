@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Place Order — Hooda's Bakery</title>
+  <!-- Razorpay Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="js/config.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="brand">🎂 Hooda's Bakery</a>
+    <div class="nav-links">
+      <a href="menu.html">Menu</a>
+    </div>
+  </nav>
+
+  <main class="order-page">
+    <h2 class="page-title">Place Your Order</h2>
+    <p class="page-subtitle">Configure your custom order parameters and proceed to secure checkout.</p>
+    
+    <form id="orderForm" class="order-form" onsubmit="submitOrder(event)">
+
+      <!-- Customer Details -->
+      <fieldset>
+        <legend>Your Details</legend>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+          <label>Full Name <input type="text" name="name" placeholder="John Doe" required/></label>
+          <label>Email Address <input type="email" name="email" placeholder="john@example.com" required/></label>
+          <label>Phone Number <input type="tel" name="phone" placeholder="9876543210" required/></label>
+        </div>
+      </fieldset>
+
+      <!-- Delivery Details -->
+      <fieldset>
+        <legend>Delivery Address</legend>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <label>Street Address <input type="text" name="street" placeholder="Flat No, Apartment, Landmark" required/></label>
+          <label>City <input type="text" name="city" placeholder="Mumbai" required/></label>
+          <label>Pincode <input type="text" name="pincode" placeholder="400001" required/></label>
+        </div>
+        <label style="margin-top: 12px;">Delivery Date <input type="date" name="deliveryDate" required/></label>
+      </fieldset>
+
+      <!-- Order Items -->
+      <fieldset>
+        <legend>Select Bakery Items</legend>
+        <div id="itemsContainer">
+          <!-- Rows will be injected here -->
+        </div>
+        <button type="button" onclick="addItemRow()" class="btn-secondary" style="border-color: var(--teal); color: var(--teal); padding: 10px 24px; margin-top: 12px;">+ Add Another Item</button>
+      </fieldset>
+
+      <label>Special Instructions / Customizations
+        <textarea name="specialInstructions" rows="3" placeholder="Specify allergies, cake writing, custom themes, eggless preference, etc."></textarea>
+      </label>
+
+      <button type="submit" class="btn-primary" id="submitBtn" style="width: 100%; border-radius: 8px; margin-top: 16px;">Proceed to Payment →</button>
+    </form>
+  </main>
+
+  <footer class="footer">
+    <p>© 2026 Hooda's Bakery · Delivering Smiles, One Slice at a Time 🎂</p>
+  </footer>
+
+  <script>
+    const API = CONFIG.API_BASE;
+    let products = [];
+
+    // Min delivery date = tomorrow
+    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    document.querySelector('[name="deliveryDate"]').min = tomorrowStr;
+    document.querySelector('[name="deliveryDate"]').value = tomorrowStr;
+
+    async function loadForm() {
+      try {
+        const res = await fetch(`${API}/products?available=true`);
+        const data = await res.json();
+        products = data.data;
+        
+        // Check if there is an item ID in query params
+        const urlParams = new URLSearchParams(window.location.search);
+        const itemParam = urlParams.get('item');
+        
+        // Add first row
+        addItemRow(itemParam);
+      } catch (err) {
+        alert("Error loading menu data. Please refresh.");
+      }
+    }
+
+    function populateSelect(sel, preselectedId = '') {
+      sel.innerHTML = '<option value="">Select item...</option>' +
+        products.map(p => `<option value="${p._id}" data-price="${p.pricePerKg}" ${p._id === preselectedId ? 'selected' : ''}>${p.name} — ₹${p.pricePerKg}/kg</option>`).join('');
+    }
+
+    function addItemRow(preselectedId = '') {
+      const container = document.getElementById('itemsContainer');
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      
+      const uniqueId = 'row-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+      row.id = uniqueId;
+
+      row.innerHTML = `
+        <select name="productId[]" required onchange="handleProductChange(this)" style="margin-top:0;">
+          <option value="">Select item...</option>
+        </select>
+        <input type="number" name="sizeKg[]" placeholder="Size (kg)" min="0.5" step="0.5" value="1.0" required style="margin-top:0;"/>
+        <input type="text" name="flavour[]" placeholder="Flavour (e.g. Vanilla)" style="margin-top:0;"/>
+        <input type="text" name="customMessage[]" placeholder="Message on Cake (optional)" style="margin-top:0;"/>
+        <button type="button" class="btn-remove-item" onclick="removeItemRow('${uniqueId}')">✕</button>
+      `;
+      container.appendChild(row);
+      populateSelect(row.querySelector('select'), preselectedId);
+      
+      // Update validation bounds if item is pre-selected
+      if (preselectedId) {
+        const pObj = products.find(p => p._id === preselectedId);
+        if (pObj) {
+          row.querySelector('[name="sizeKg[]"]').min = pObj.minSizeKg;
+          row.querySelector('[name="sizeKg[]"]').value = pObj.minSizeKg;
+        }
+      }
+    }
+
+    function removeItemRow(id) {
+      const row = document.getElementById(id);
+      const allRows = document.querySelectorAll('.item-row');
+      if (allRows.length > 1) {
+        row.remove();
+      } else {
+        alert("Your order must contain at least one item!");
+      }
+    }
+
+    function handleProductChange(selectEl) {
+      const selectedOpt = selectEl.options[selectEl.selectedIndex];
+      const pId = selectEl.value;
+      const sizeInput = selectEl.parentElement.querySelector('[name="sizeKg[]"]');
+      
+      if (pId) {
+        const pObj = products.find(p => p._id === pId);
+        if (pObj) {
+          sizeInput.min = pObj.minSizeKg;
+          sizeInput.value = pObj.minSizeKg;
+        }
+      }
+    }
+
+    async function submitOrder(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating Razorpay payment link... 🧁';
+
+      const form = e.target;
+      const rows = form.querySelectorAll('.item-row');
+      const items = [];
+
+      for (let row of rows) {
+        const pId = row.querySelector('[name="productId[]"]').value;
+        const size = parseFloat(row.querySelector('[name="sizeKg[]"]').value);
+        const flavour = row.querySelector('[name="flavour[]"]').value;
+        const customMessage = row.querySelector('[name="customMessage[]"]').value;
+
+        const product = products.find(p => p._id === pId);
+        if (!product) continue;
+
+        items.push({
+          product: pId,
+          productName: product.name,
+          sizeKg: size,
+          pricePerKg: product.pricePerKg,
+          flavour: flavour,
+          customMessage: customMessage
+        });
+      }
+
+      const payload = {
+        name: form.name.value,
+        email: form.email.value,
+        phone: form.phone.value,
+        address: {
+          street: form.street.value,
+          city: form.city.value,
+          pincode: form.pincode.value
+        },
+        deliveryDate: form.deliveryDate.value,
+        specialInstructions: form.specialInstructions.value,
+        items
+      };
+
+      try {
+        const res = await fetch(`${API}/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (!data.success) {
+          throw new Error(data.message);
+        }
+        
+        openRazorpayCheckout(data);
+      } catch (err) {
+        alert('Order setup failed: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Proceed to Payment →';
+      }
+    }
+
+    function openRazorpayCheckout(data) {
+      const options = {
+        key: data.razorpayKeyId,
+        amount: data.total * 100, // paise
+        currency: 'INR',
+        name: "Hooda's Bakery",
+        description: `Order ID: ${data.orderId}`,
+        order_id: data.razorpayOrderId,
+        prefill: {
+          name: data.customerName,
+          email: data.customerEmail
+        },
+        theme: {
+          color: '#1B2A4A'
+        },
+        handler: async (response) => {
+          const btn = document.getElementById('submitBtn');
+          btn.textContent = 'Verifying Transaction... 🧾';
+          
+          try {
+            const verifyRes = await fetch(`${API}/payments/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                dbOrderId: data.dbOrderId
+              })
+            });
+            const verifyData = await verifyRes.json();
+            
+            if (verifyData.success) {
+              window.location.href = `confirmation.html?orderId=${data.orderId}`;
+            } else {
+              alert('Payment Verification failed. Please check with your bank.');
+              btn.disabled = false;
+              btn.textContent = 'Proceed to Payment →';
+            }
+          } catch (err) {
+            alert('Verification connection error.');
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+          }
+        }
+      };
+      
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    }
+
+    loadForm();
+  </script>
+
+  <!-- Smart Chatbot Script -->
+  <script src="js/chatbot.js"></script>
+</body>
+</html>
