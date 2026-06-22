@@ -16,6 +16,7 @@ const paymentRoutes = require('./routes/payments');
 const leadRoutes = require('./routes/leads');
 const feedbackRoutes = require('./routes/feedback');
 const adminRoutes = require('./routes/admin');
+const chatbotRoutes = require('./routes/chatbot');
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Health check route
 app.get('/health', (req, res) => res.json({ status: 'Bakery server is running 🎂' }));

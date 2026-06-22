@@ -292,23 +292,25 @@ async function submitLead() {
   showOptions();
 }
 
-function handleGeneralChat(text) {
+async function handleGeneralChat(text) {
   showTypingIndicator();
-  setTimeout(() => {
+  try {
+    const res = await fetch(`${API_BASE}/chatbot/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const result = await res.json();
     removeTypingIndicator();
-    const cleanText = text.toLowerCase();
     
-    if (cleanText.includes('hello') || cleanText.includes('hi') || cleanText.includes('hey')) {
-      addBotMessage("Hello! Hope you are having a wonderful day. What sweet treat can I help you find?");
-    } else if (cleanText.includes('price') || cleanText.includes('cost') || cleanText.includes('how much')) {
-      addBotMessage("Our pricing starts at ₹800/kg for standard cakes, and custom premium cakes range from ₹1200 to ₹2500/kg. Pastries start at ₹120/slice. Tap 'Browse Menu & Prices' to see specific items.");
-    } else if (cleanText.includes('eggless') || cleanText.includes('egg')) {
-      addBotMessage("Yes! We bake delicious eggless options for almost all cakes. No compromises on fluffiness and taste!");
-    } else if (cleanText.includes('location') || cleanText.includes('where')) {
-      addBotMessage("Our main kitchen is located at Sweet Street, Sector 5. We deliver city-wide up to 15km!");
+    if (result.success) {
+      addBotMessage(result.reply);
     } else {
-      addBotMessage("I am a smart bot trained for Sweet Bites Bakery. You can choose one of the options below, track an order, or submit a custom inquiry request!");
+      addBotMessage("Oops! I had some trouble understanding that. Could you try again?");
     }
-    showOptions();
-  }, 800);
+  } catch (err) {
+    removeTypingIndicator();
+    addBotMessage("Sorry, I'm having trouble connecting to my brain right now. Please try again in a moment! 🎂");
+  }
+  showOptions();
 }
