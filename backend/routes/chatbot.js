@@ -13,7 +13,7 @@ router.post('/chat', async (req, res) => {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,6 +44,7 @@ router.post('/chat', async (req, res) => {
       const reply = data.candidates[0].content.parts[0].text;
       res.json({ success: true, reply });
     } else {
+      console.error("Gemini API Error Response:", JSON.stringify(data, null, 2));
       throw new Error("Invalid response from Gemini API");
     }
   } catch (err) {
