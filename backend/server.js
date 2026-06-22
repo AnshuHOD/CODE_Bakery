@@ -54,7 +54,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 
 // Health check route
-app.get('/health', (req, res) => res.json({ status: 'Bakery server is running 🎂' }));
+app.get('/health', (req, res) => res.json({ status: 'Bakery server is running 🎂', version: '1.0.1 - gemini-3.1-flash-lite' }));
 
 // 404 handler
 app.use('*', (req, res) => res.status(404).json({ message: 'Route not found' }));
