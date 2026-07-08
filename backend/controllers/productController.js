@@ -7,6 +7,7 @@
 //   deleteProduct → item remove
 
 const Product = require('../models/Product');
+const { getMappedImage } = require('../utils/imageMapper');
 
 // GET /api/products
 // Query params: ?category=cake&available=true
@@ -37,6 +38,10 @@ const getProductById = async (req, res) => {
 // POST /api/products  (admin only)
 const createProduct = async (req, res) => {
   try {
+    // Auto-generate delicious food photo if blank or invalid URL
+    if (!req.body.imageUrl || req.body.imageUrl.trim() === '' || !/^https?:\/\//i.test(req.body.imageUrl.trim())) {
+      req.body.imageUrl = getMappedImage(req.body.name, req.body.category);
+    }
     const product = await Product.create(req.body);
     res.status(201).json({ success: true, data: product });
   } catch (err) {
@@ -47,6 +52,10 @@ const createProduct = async (req, res) => {
 // PUT /api/products/:id  (admin only)
 const updateProduct = async (req, res) => {
   try {
+    // Auto-generate delicious food photo if blank or invalid URL
+    if (!req.body.imageUrl || req.body.imageUrl.trim() === '' || !/^https?:\/\//i.test(req.body.imageUrl.trim())) {
+      req.body.imageUrl = getMappedImage(req.body.name, req.body.category);
+    }
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
       new: true, runValidators: true,
     });

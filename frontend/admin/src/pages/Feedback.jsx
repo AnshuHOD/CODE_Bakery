@@ -25,8 +25,8 @@ export default function Feedback() {
             <div key={f._id} className="dashboard-card" style={{ borderLeft: `6px solid ${f.rating >= 4 ? '#0F6E56' : f.rating === 3 ? '#E8A020' : '#E74C3C'}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                 <div>
-                  <h4 style={{ color: '#1B2A4A', fontSize: '18px', fontWeight: '700' }}>{f.customer?.name || 'Anonymous'}</h4>
-                  <small style={{ color: '#666', fontSize: '13px' }}>{f.customer?.email || 'No email registered'}</small>
+                  <h4 style={{ color: '#1B2A4A', fontSize: '18px', fontWeight: '700' }}>{f.customer?.name || f.guestName || 'Anonymous'}</h4>
+                  <small style={{ color: '#666', fontSize: '13px' }}>{f.customer?.email || f.guestEmail || 'No email registered'}</small>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ color: '#E8A020', fontSize: '20px', fontWeight: 'bold', display: 'block' }}>

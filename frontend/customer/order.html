@@ -6,7 +6,7 @@
   <title>Place Order — Hooda's Bakery</title>
   <!-- Razorpay Checkout SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=1.2"/>
+  <link rel="stylesheet" href="css/style.css?v=4.6"/>
   <link rel="icon" type="image/png" href="favicon.png"/>
   <script src="js/config.js"></script>
 </head>
@@ -70,10 +70,11 @@
     const API = CONFIG.API_BASE;
     let products = [];
 
-    // Min delivery date = tomorrow
-    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    document.querySelector('[name="deliveryDate"]').min = tomorrowStr;
-    document.querySelector('[name="deliveryDate"]').value = tomorrowStr;
+    // Min delivery date = today (local timezone offset to prevent UTC midnight mismatch)
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+    document.querySelector('[name="deliveryDate"]').min = localISOTime;
+    document.querySelector('[name="deliveryDate"]').value = localISOTime;
 
     async function loadForm() {
       try {
@@ -81,12 +82,137 @@
         const data = await res.json();
         products = data.data;
         
-        // Check if there is an item ID in query params
         const urlParams = new URLSearchParams(window.location.search);
-        const itemParam = urlParams.get('item');
         
-        // Add first row
-        addItemRow(itemParam);
+        // Pre-fill customer details from chatbot lead link
+        const nameVal = urlParams.get('name');
+        const emailVal = urlParams.get('email');
+        const phoneVal = urlParams.get('phone');
+        const addressVal = urlParams.get('address');
+        const timeSlotVal = urlParams.get('timeSlot');
+        const itemsVal = urlParams.get('items');
+        
+        if (nameVal) document.querySelector('[name="name"]').value = nameVal;
+        if (emailVal) document.querySelector('[name="email"]').value = emailVal;
+        if (phoneVal) document.querySelector('[name="phone"]').value = phoneVal;
+        if (addressVal) {
+          let street = addressVal.trim();
+          let city = "Rohtak"; // Default city
+          let pincode = "";
+
+          // Extract 6-digit pincode if present
+          const pinMatch = street.match(/\b\d{6}\b/);
+          if (pinMatch) {
+            pincode = pinMatch[0];
+            street = street.replace(pincode, '').trim();
+          }
+
+          // Check if Rohtak is specified, and clean it from street string
+          const rohtakRegex = /,?\s*rohtak\s*,?/i;
+          if (rohtakRegex.test(street)) {
+            city = "Rohtak";
+            street = street.replace(rohtakRegex, '').trim();
+          }
+
+          // Remove trailing/leading commas, dashes, spaces from street
+          street = street.replace(/^[,\-\s]+|[,\-\s]+$/g, '').trim();
+
+          // Set inputs
+          if (document.querySelector('[name="street"]')) {
+            document.querySelector('[name="street"]').value = street;
+          }
+          if (document.querySelector('[name="city"]')) {
+            document.querySelector('[name="city"]').value = city || "Rohtak";
+          }
+          if (document.querySelector('[name="pincode"]')) {
+            document.querySelector('[name="pincode"]').value = pincode || "124001";
+          }
+        }
+        if (timeSlotVal) {
+          document.querySelector('[name="specialInstructions"]').value = `Preferred delivery time slot: ${timeSlotVal}`;
+        }
+        
+        // Check if there is an item ID in query params
+        let itemParam = urlParams.get('item');
+        const customParam = urlParams.get('custom') === 'true';
+        
+        // Attempt to match itemsVal (from Chatbot lead) to a product
+        if (itemsVal && !itemParam) {
+          const normItems = itemsVal.toLowerCase();
+          const matchedProduct = products.find(p => {
+            const normProd = p.name.toLowerCase();
+            return normItems.includes(normProd) || normProd.includes(normItems);
+          });
+          if (matchedProduct) {
+            itemParam = matchedProduct._id;
+          }
+        }
+        
+        if (customParam) {
+          // Find any cake item or default to first product
+          const cakeProduct = products.find(p => p.category === 'cake') || products[0];
+          const cakeId = cakeProduct ? cakeProduct._id : '';
+          
+          addItemRow(cakeId);
+          
+          // Pre-fill size, flavor, and custom message
+          const firstRow = document.querySelector('.item-row');
+          if (firstRow) {
+            const flavorVal = urlParams.get('flavor');
+            const frostingVal = urlParams.get('frosting');
+            const weightVal = urlParams.get('weight');
+            const messageVal = urlParams.get('message');
+            
+            if (weightVal) {
+              const sizeInput = firstRow.querySelector('[name="sizeKg[]"]');
+              if (sizeInput) sizeInput.value = weightVal;
+            }
+            if (flavorVal) {
+              const flavorInput = firstRow.querySelector('[name="flavour[]"]');
+              if (flavorInput) {
+                flavorInput.value = (frostingVal && frostingVal !== 'Standard') ? `${flavorVal} (Frosting: ${frostingVal})` : flavorVal;
+              }
+            }
+            if (messageVal) {
+              const msgInput = firstRow.querySelector('[name="customMessage[]"]');
+              if (msgInput) msgInput.value = messageVal;
+            }
+          }
+        } else {
+          // Add first row normally
+          addItemRow(itemParam);
+
+          // If prefilled from chatbot itemsVal, try to extract weight/qty and shape/flavor details
+          if (itemsVal) {
+            const firstRow = document.querySelector('.item-row');
+            if (firstRow) {
+              // Parse weight (e.g., "0.5 kg" or "half kg" or "1 kg")
+              let weight = 1.0;
+              const normItems = itemsVal.toLowerCase();
+              if (normItems.includes('half') || normItems.includes('0.5') || normItems.includes('1/2')) {
+                weight = 0.5;
+              } else {
+                const numMatch = normItems.match(/(\d+(\.\d+)?)\s*(kg|kilo)/);
+                if (numMatch) {
+                  weight = parseFloat(numMatch[1]);
+                }
+              }
+
+              const sizeInput = firstRow.querySelector('[name="sizeKg[]"]');
+              if (sizeInput) sizeInput.value = weight;
+
+              // Parse custom options like shape or flavor details
+              let flavour = "";
+              if (normItems.includes('heart')) {
+                flavour = "Heart Shape";
+              }
+              const flavourInput = firstRow.querySelector('[name="flavour[]"]');
+              if (flavourInput && flavour) {
+                flavourInput.value = flavour;
+              }
+            }
+          }
+        }
       } catch (err) {
         alert("Error loading menu data. Please refresh.");
       }
@@ -94,7 +220,10 @@
 
     function populateSelect(sel, preselectedId = '') {
       sel.innerHTML = '<option value="">Select item...</option>' +
-        products.map(p => `<option value="${p._id}" data-price="${p.pricePerKg}" ${p._id === preselectedId ? 'selected' : ''}>${p.name} — ₹${p.pricePerKg}/kg</option>`).join('');
+        products.map(p => {
+          const unit = p.category === 'cake' ? 'kg' : 'pc';
+          return `<option value="${p._id}" data-price="${p.pricePerKg}" ${p._id === preselectedId ? 'selected' : ''}>${p.name} — ₹${p.pricePerKg}/${unit}</option>`;
+        }).join('');
     }
 
     function addItemRow(preselectedId = '') {
@@ -115,15 +244,13 @@
         <button type="button" class="btn-remove-item" onclick="removeItemRow('${uniqueId}')">✕</button>
       `;
       container.appendChild(row);
-      populateSelect(row.querySelector('select'), preselectedId);
       
-      // Update validation bounds if item is pre-selected
+      const selectEl = row.querySelector('select');
+      populateSelect(selectEl, preselectedId);
+      
+      // Update validation and visibility if pre-selected
       if (preselectedId) {
-        const pObj = products.find(p => p._id === preselectedId);
-        if (pObj) {
-          row.querySelector('[name="sizeKg[]"]').min = pObj.minSizeKg;
-          row.querySelector('[name="sizeKg[]"]').value = pObj.minSizeKg;
-        }
+        handleProductChange(selectEl);
       }
     }
 
@@ -138,15 +265,37 @@
     }
 
     function handleProductChange(selectEl) {
-      const selectedOpt = selectEl.options[selectEl.selectedIndex];
       const pId = selectEl.value;
-      const sizeInput = selectEl.parentElement.querySelector('[name="sizeKg[]"]');
+      const row = selectEl.parentElement;
+      const sizeInput = row.querySelector('[name="sizeKg[]"]');
+      const flavourInput = row.querySelector('[name="flavour[]"]');
+      const customMessageInput = row.querySelector('[name="customMessage[]"]');
       
       if (pId) {
         const pObj = products.find(p => p._id === pId);
         if (pObj) {
-          sizeInput.min = pObj.minSizeKg;
-          sizeInput.value = pObj.minSizeKg;
+          const isCake = pObj.category === 'cake';
+          
+          if (isCake) {
+            sizeInput.placeholder = "Size (kg)";
+            sizeInput.step = "0.5";
+            sizeInput.min = pObj.minSizeKg;
+            sizeInput.value = pObj.minSizeKg;
+            
+            flavourInput.style.display = "inline-block";
+            customMessageInput.style.display = "inline-block";
+          } else {
+            sizeInput.placeholder = "Qty (pcs)";
+            sizeInput.step = "1";
+            const minQty = Math.ceil(pObj.minSizeKg) || 1;
+            sizeInput.min = minQty;
+            sizeInput.value = minQty;
+            
+            flavourInput.style.display = "none";
+            flavourInput.value = ""; // Clear flavour
+            customMessageInput.style.display = "none";
+            customMessageInput.value = ""; // Clear cake writing message
+          }
         }
       }
     }
@@ -206,12 +355,141 @@
           throw new Error(data.message);
         }
         
-        openRazorpayCheckout(data);
+        currentOrderData = data;
+        openSandboxModal();
       } catch (err) {
         alert('Order setup failed: ' + err.message);
         btn.disabled = false;
         btn.textContent = 'Proceed to Payment →';
       }
+    }
+
+    let currentOrderData = null;
+
+    function openSandboxModal() {
+      if (!currentOrderData) return;
+      document.getElementById('payAmountVal').innerText = `₹${currentOrderData.total.toFixed(2)}`;
+      document.getElementById('payOrderIdVal').innerText = currentOrderData.orderId;
+      document.getElementById('upiPin').value = '';
+      
+      // Open modal
+      document.getElementById('sandboxPaymentModal').style.display = 'flex';
+      document.getElementById('upiPin').focus();
+    }
+
+    function closeSandboxModal() {
+      document.getElementById('sandboxPaymentModal').style.display = 'none';
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = false;
+      btn.textContent = 'Proceed to Payment →';
+    }
+
+    function switchPayTab(type) {
+      if (type === 'upi') {
+        document.getElementById('upiForm').style.display = 'block';
+        document.getElementById('cardForm').style.display = 'none';
+        document.getElementById('upiTabBtn').classList.add('active');
+        document.getElementById('cardTabBtn').classList.remove('active');
+      } else {
+        document.getElementById('upiForm').style.display = 'none';
+        document.getElementById('cardForm').style.display = 'block';
+        document.getElementById('upiTabBtn').classList.remove('active');
+        document.getElementById('cardTabBtn').classList.add('active');
+      }
+    }
+
+    async function processSandboxPayment() {
+      const isUpi = document.getElementById('upiForm').style.display !== 'none';
+      if (isUpi) {
+        const vpa = document.getElementById('upiVpa').value.trim();
+        if (!vpa || !vpa.includes('@') || vpa.length < 3) {
+          alert('Please enter a valid VPA (e.g. customer@okaxis).');
+          return;
+        }
+        const pin = document.getElementById('upiPin').value.trim();
+        if (!/^\d{4}$/.test(pin)) {
+          alert('Please enter a valid 4-digit numeric UPI PIN.');
+          return;
+        }
+      } else {
+        const name = document.getElementById('cardName').value.trim();
+        if (name.length < 2) {
+          alert('Please enter the Cardholder Name.');
+          return;
+        }
+        const cardNum = document.getElementById('cardNumber').value.replace(/\s+/g, '');
+        if (!/^\d{16}$/.test(cardNum)) {
+          alert('Please enter a valid 16-digit Card Number.');
+          return;
+        }
+        const expiry = document.getElementById('cardExpiry').value.trim();
+        const expiryRegex = /^(0[1-9]|1[0-2])\/(\d{2})$/;
+        if (!expiryRegex.test(expiry)) {
+          alert('Please enter a valid Expiry Date (MM/YY).');
+          return;
+        }
+        const [, expMonth, expYear] = expiry.match(expiryRegex);
+        const now = new Date();
+        const currentYear = now.getFullYear() % 100;
+        const currentMonth = now.getMonth() + 1;
+        const expYrInt = parseInt(expYear, 10);
+        const expMoInt = parseInt(expMonth, 10);
+        if (expYrInt < currentYear || (expYrInt === currentYear && expMoInt < currentMonth)) {
+          alert('The card expiry date must be in the future.');
+          return;
+        }
+        const cvv = document.getElementById('cardCvv').value.trim();
+        if (!/^\d{3}$/.test(cvv)) {
+          alert('Please enter a valid 3-digit CVV.');
+          return;
+        }
+      }
+
+      const loading = document.getElementById('payLoading');
+      const loadingText = document.getElementById('payLoadingText');
+      loading.style.display = 'flex';
+      
+      loadingText.innerText = 'Connecting to Secure Gateway... 🔒';
+      await new Promise(r => setTimeout(r, 800));
+      
+      loadingText.innerText = 'Verifying PIN with Bank... 🔑';
+      await new Promise(r => setTimeout(r, 1000));
+      
+      loadingText.innerText = 'Authorizing Settlement... 💸';
+      await new Promise(r => setTimeout(r, 800));
+      
+      const mockPaymentId = 'mock_pay_' + Date.now() + Math.random().toString(36).substr(2, 9);
+      
+      try {
+        const verifyRes = await fetch(`${API}/payments/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            razorpayOrderId: currentOrderData.razorpayOrderId,
+            razorpayPaymentId: mockPaymentId,
+            razorpaySignature: 'mock_sig_sandbox_testing',
+            dbOrderId: currentOrderData.dbOrderId
+          })
+        });
+        const verifyData = await verifyRes.json();
+        
+        if (verifyData.success) {
+          loadingText.innerText = 'Payment Successful! Redirecting... 🎉';
+          await new Promise(r => setTimeout(r, 800));
+          window.location.href = `confirmation.html?orderId=${currentOrderData.orderId}`;
+        } else {
+          alert('Sandbox payment validation failed: ' + verifyData.message);
+          loading.style.display = 'none';
+        }
+      } catch (err) {
+        alert('Network error validating sandbox transaction.');
+        loading.style.display = 'none';
+      }
+    }
+
+    function fallbackToRazorpay() {
+      document.getElementById('sandboxPaymentModal').style.display = 'none';
+      openRazorpayCheckout(currentOrderData);
     }
 
     function openRazorpayCheckout(data) {
@@ -275,7 +553,77 @@
     loadForm();
   </script>
 
+  <!-- Secure Sandbox UPI / Card Payment Modal -->
+  <div id="sandboxPaymentModal" class="pay-modal-overlay">
+    <div class="pay-modal-card">
+      <div class="pay-modal-header">
+        <h3>🔒 Secure Payment Sandbox</h3>
+        <button class="pay-modal-close" onclick="closeSandboxModal()">✕</button>
+      </div>
+      <div class="pay-modal-body">
+        <div class="pay-amount-banner">
+          <span class="pay-label">Total Payable Amount</span>
+          <span class="pay-amount" id="payAmountVal">₹0.00</span>
+        </div>
+        <div class="pay-details-row">
+          <span>Order Reference:</span>
+          <strong id="payOrderIdVal">ORD-XXXX</strong>
+        </div>
+
+        <div class="pay-tabs">
+          <button class="pay-tab-btn active" id="upiTabBtn" onclick="switchPayTab('upi')">UPI Payment</button>
+          <button class="pay-tab-btn" id="cardTabBtn" onclick="switchPayTab('card')">Credit/Debit Card</button>
+        </div>
+
+        <!-- UPI Form -->
+        <div id="upiForm" class="pay-tab-content">
+          <div class="pay-group">
+            <label>Virtual Payment Address (VPA)</label>
+            <input type="text" id="upiVpa" value="customer@okaxis" placeholder="e.g. name@upi" />
+          </div>
+          <div class="pay-group">
+            <label>Enter 4-Digit UPI PIN</label>
+            <input type="password" id="upiPin" maxlength="4" placeholder="••••" style="letter-spacing: 15px; text-align: center; font-size: 24px;" />
+            <p class="pay-help">Enter any 4-digit PIN to authenticate this secure sandbox transaction.</p>
+          </div>
+        </div>
+
+        <!-- Card Form -->
+        <div id="cardForm" class="pay-tab-content" style="display: none;">
+          <div class="pay-group">
+            <label>Cardholder Name</label>
+            <input type="text" id="cardName" placeholder="John Doe" value="John Doe" />
+          </div>
+          <div class="pay-group">
+            <label>Card Number</label>
+            <input type="text" id="cardNumber" placeholder="4111 2222 3333 4444" value="4111222233334444" maxlength="16" />
+          </div>
+          <div class="pay-row">
+            <div class="pay-group">
+              <label>Expiry Date</label>
+              <input type="text" id="cardExpiry" placeholder="MM/YY" value="12/28" />
+            </div>
+            <div class="pay-group">
+              <label>CVV</label>
+              <input type="password" id="cardCvv" placeholder="•••" value="123" maxlength="3" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading Overlay Inside Modal -->
+        <div id="payLoading" class="pay-loading-overlay" style="display: none;">
+          <div class="pay-spinner"></div>
+          <p id="payLoadingText">Connecting to bank securely...</p>
+        </div>
+
+        <!-- Confirmation Buttons -->
+        <button type="button" class="btn-pay-confirm" onclick="processSandboxPayment()">Pay Securely Now</button>
+        <button type="button" class="btn-pay-rzp" onclick="fallbackToRazorpay()">Or Pay via Razorpay Checkout</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Smart Chatbot Script -->
-  <script src="js/chatbot.js"></script>
+  <script src="js/chatbot.js?v=3.5"></script>
 </body>
 </html>

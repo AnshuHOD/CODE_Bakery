@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 
-const CATEGORIES = ['cake', 'pastry', 'bread', 'cookie', 'other'];
+const CATEGORIES = ['cake', 'pastry', 'bread', 'cookie', 'waffle', 'pancake', 'coffee', 'tea', 'other'];
 
 export default function Menu() {
   const [products, setProducts] = useState([]);
@@ -29,10 +29,11 @@ export default function Menu() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const isCake = form.category === 'cake';
     const payload = {
       ...form,
       pricePerKg: parseFloat(form.pricePerKg),
-      minSizeKg: parseFloat(form.minSizeKg),
+      minSizeKg: isCake ? parseFloat(form.minSizeKg) : parseInt(form.minSizeKg, 10) || 1,
       tags: form.tags.split(',').map(t => t.trim()).filter(t => t !== '')
     };
 
@@ -99,9 +100,13 @@ export default function Menu() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div className="form-group">
-              <label className="form-label">Category</label>
-              <select className="form-control" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-control" value={form.category} onChange={e => {
+                const newCat = e.target.value;
+                const newMinSize = newCat === 'cake' ? 0.5 : 1;
+                setForm({...form, category: newCat, minSizeKg: newMinSize});
+              }}>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -116,18 +121,21 @@ export default function Menu() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="form-group">
-              <label className="form-label">Price per Kg (₹)</label>
+              <label className="form-label">{form.category === 'cake' ? 'Price per Kg (₹)' : 'Price per Piece (₹)'}</label>
               <input type="number" className="form-control" value={form.pricePerKg} onChange={e => setForm({...form, pricePerKg: e.target.value})} required min="0"/>
             </div>
             <div className="form-group">
-              <label className="form-label">Min Size (Kg)</label>
-              <input type="number" className="form-control" step="0.5" value={form.minSizeKg} onChange={e => setForm({...form, minSizeKg: e.target.value})} required min="0.5"/>
+              <label className="form-label">{form.category === 'cake' ? 'Min Size (Kg)' : 'Min Quantity (Pieces)'}</label>
+              <input type="number" className="form-control" step={form.category === 'cake' ? "0.5" : "1"} value={form.minSizeKg} onChange={e => setForm({...form, minSizeKg: e.target.value})} required min={form.category === 'cake' ? "0.5" : "1"}/>
             </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">Image URL (Optional)</label>
             <input type="text" className="form-control" value={form.imageUrl} onChange={e => setForm({...form, imageUrl: e.target.value})} placeholder="https://image-url.com/cake.jpg"/>
+            <span style={{ fontSize: '11px', color: '#0F6E56', marginTop: '4px', display: 'block', fontWeight: '500' }}>
+              💡 If left blank, a beautiful, delicious photo customized to the product name will be assigned automatically.
+            </span>
           </div>
 
           <div className="form-group">
@@ -162,8 +170,8 @@ export default function Menu() {
                 <h4 style={{ color: '#1B2A4A', fontSize: '16px', fontWeight: '700' }}>{p.name}</h4>
                 <p style={{ color: '#666', fontSize: '13px', margin: '4px 0' }}>{p.description || 'No description provided.'}</p>
                 <div style={{ display: 'flex', gap: '16px', fontSize: '14px', fontWeight: '600' }}>
-                  <span style={{ color: '#0F6E56' }}>₹{p.pricePerKg}/kg</span>
-                  <span style={{ color: '#888' }}>Min: {p.minSizeKg}kg</span>
+                  <span style={{ color: '#0F6E56' }}>₹{p.pricePerKg}/{p.category === 'cake' ? 'kg' : 'pc'}</span>
+                  <span style={{ color: '#888' }}>Min: {p.minSizeKg} {p.category === 'cake' ? 'kg' : 'pc'}</span>
                   <span style={{ color: p.available ? '#2ECC71' : '#E74C3C' }}>
                     ● {p.available ? 'In Stock' : 'Out of Stock'}
                   </span>

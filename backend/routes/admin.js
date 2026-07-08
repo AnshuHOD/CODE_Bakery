@@ -20,27 +20,32 @@ router.post('/login', (req, res) => {
 
 // GET /api/admin/stats — Dashboard numbers
 router.get('/stats', protect, async (req, res) => {
-  const [totalOrders, totalRevenue, totalLeads, totalCustomers, recentOrders] = await Promise.all([
-    Order.countDocuments(),
-    Order.aggregate([
-      { $match: { 'payment.status': 'paid' } },
-      { $group: { _id: null, total: { $sum: '$total' } } }
-    ]),
-    Lead.countDocuments(),
-    Customer.countDocuments(),
-    Order.find().populate('customer', 'name').sort({ createdAt: -1 }).limit(5),
-  ]);
+  try {
+    const [totalOrders, totalRevenue, totalLeads, totalCustomers, recentOrders] = await Promise.all([
+      Order.countDocuments(),
+      Order.aggregate([
+        { $match: { 'payment.status': 'paid' } },
+        { $group: { _id: null, total: { $sum: '$total' } } }
+      ]),
+      Lead.countDocuments(),
+      Customer.countDocuments(),
+      Order.find().populate('customer', 'name').sort({ createdAt: -1 }).limit(5),
+    ]);
 
-  res.json({
-    success: true,
-    data: {
-      totalOrders,
-      totalRevenue: totalRevenue[0]?.total || 0,
-      totalLeads,
-      totalCustomers,
-      recentOrders,
-    },
-  });
+    res.json({
+      success: true,
+      data: {
+        totalOrders,
+        totalRevenue: totalRevenue[0]?.total || 0,
+        totalLeads,
+        totalCustomers,
+        recentOrders,
+      },
+    });
+  } catch (err) {
+    console.error("Error in /admin/stats:", err);
+    res.status(500).json({ success: false, message: 'Server error loading stats', error: err.message });
+  }
 });
 
 module.exports = router;

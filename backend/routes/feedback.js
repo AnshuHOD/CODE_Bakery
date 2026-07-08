@@ -7,15 +7,26 @@ const { protect } = require('../middleware/auth');
 // POST /api/feedback — Customer feedback submit karta hai
 router.post('/', async (req, res) => {
   try {
-    const { orderId, rating, comment, wouldRecommend } = req.body;
-    const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    const { orderId, rating, comment, wouldRecommend, guestName, guestEmail } = req.body;
+    
+    let feedbackData = {
+      rating,
+      comment,
+      wouldRecommend
+    };
 
-    const feedback = await Feedback.create({
-      order: orderId,
-      customer: order.customer,
-      rating, comment, wouldRecommend,
-    });
+    if (orderId) {
+      const order = await Order.findById(orderId);
+      if (order) {
+        feedbackData.order = orderId;
+        feedbackData.customer = order.customer;
+      }
+    } else {
+      feedbackData.guestName = guestName || 'Guest Reviewer';
+      feedbackData.guestEmail = guestEmail || 'No email registered';
+    }
+
+    const feedback = await Feedback.create(feedbackData);
     res.status(201).json({ success: true, data: feedback });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

@@ -3,11 +3,12 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const Lead = require('../models/Lead');
 const Customer = require('../models/Customer');
+const { sendWhatsAppLeadAdminEmail } = require('../services/emailService');
 
-// POST /api/leads — Public endpoint for Smart Chatbot lead qualification
+// POST /api/leads — Public endpoint for lead generation (Chatbot & WhatsApp)
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, interestedIn, estimatedBudget, notes } = req.body;
+    const { name, email, phone, interestedIn, estimatedBudget, notes, source } = req.body;
     
     // Check if customer exists or create them
     let customer = await Customer.findOne({ email });
@@ -17,15 +18,20 @@ router.post('/', async (req, res) => {
 
     const lead = await Lead.create({
       customer: customer ? customer._id : undefined,
-      name,
+      name: name || 'WhatsApp Visitor',
       email,
       phone,
       interestedIn,
       estimatedBudget,
-      source: 'website',
+      source: source || 'website',
       status: 'new',
       notes
     });
+
+    // Send admin email notification if it's a WhatsApp connect query
+    if (lead.source === 'whatsapp') {
+      sendWhatsAppLeadAdminEmail(lead).catch(console.error);
+    }
 
     res.status(201).json({ success: true, data: lead });
   } catch (err) {

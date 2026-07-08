@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Our Menu — Hooda's Bakery</title>
-  <link rel="stylesheet" href="css/style.css?v=1.2"/>
+  <link rel="stylesheet" href="css/style.css?v=4.6"/>
   <link rel="icon" type="image/png" href="favicon.png"/>
   <script src="js/config.js"></script>
 </head>
@@ -28,6 +28,10 @@
       <button class="filter-btn" onclick="filterMenu(this, 'pastry')">Pastries</button>
       <button class="filter-btn" onclick="filterMenu(this, 'bread')">Breads</button>
       <button class="filter-btn" onclick="filterMenu(this, 'cookie')">Cookies</button>
+      <button class="filter-btn" onclick="filterMenu(this, 'waffle')">Waffles</button>
+      <button class="filter-btn" onclick="filterMenu(this, 'pancake')">Pancakes</button>
+      <button class="filter-btn" onclick="filterMenu(this, 'coffee')">Specialty Coffee</button>
+      <button class="filter-btn" onclick="filterMenu(this, 'tea')">Artisanal Tea</button>
     </div>
 
     <!-- Products load here from API -->
@@ -65,27 +69,32 @@
     function renderProducts(products) {
       const grid = document.getElementById('productGrid');
       if (!products.length) { grid.innerHTML = '<p>No items in this category.</p>'; return; }
-      grid.innerHTML = products.map(p => `
-        <div class="product-card">
-          ${p.imageUrl ? `<img src="${p.imageUrl}" alt="${p.name}" class="product-img"/>` : '<div class="product-img-placeholder">🎂</div>'}
-          <div class="product-info">
-            <span class="product-category">${p.category}</span>
-            <h3>${p.name}</h3>
-            <p>${p.description}</p>
-            <div class="price-container">
-              <span class="price">₹${p.pricePerKg} <span style="font-size: 14px; font-weight: 500; color: #888;">/ kg</span></span>
-              <span class="min-size">Min size: ${p.minSizeKg} kg</span>
+      grid.innerHTML = products.map(p => {
+        const isCake = p.category === 'cake';
+        const unitLabel = isCake ? 'kg' : 'pc';
+        const sizeLabel = isCake ? `Min size: ${p.minSizeKg} kg` : `Min Qty: ${p.minSizeKg} pc`;
+        return `
+          <div class="product-card">
+            ${p.imageUrl ? `<img src="${p.imageUrl}" alt="${p.name}" class="product-img"/>` : '<div class="product-img-placeholder">🎂</div>'}
+            <div class="product-info">
+              <span class="product-category">${p.category}</span>
+              <h3>${p.name}</h3>
+              <p>${p.description}</p>
+              <div class="price-container">
+                <span class="price">₹${p.pricePerKg} <span style="font-size: 14px; font-weight: 500; color: #888;">/ ${unitLabel}</span></span>
+                <span class="min-size">${sizeLabel}</span>
+              </div>
+              <a href="order.html?item=${p._id}" class="btn-order">Order This</a>
             </div>
-            <a href="order.html?item=${p._id}" class="btn-order">Order This</a>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     loadMenu();
   </script>
 
   <!-- Smart Chatbot Script -->
-  <script src="js/chatbot.js"></script>
+  <script src="js/chatbot.js?v=3.5"></script>
 </body>
 </html>

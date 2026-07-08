@@ -4,6 +4,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Product = require('./models/Product');
+const { getMappedImage } = require('./utils/imageMapper');
 
 const initialProducts = [
   {
@@ -55,6 +56,56 @@ const initialProducts = [
     available: true,
     imageUrl: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=600',
     tags: ['cookie', 'chocolate', 'snack']
+  },
+  {
+    name: 'Classic Belgian Waffles',
+    description: 'Crisp and golden waffles dusted with powdered sugar, served with pure maple syrup and whipped cream.',
+    category: 'waffle',
+    pricePerKg: 140,
+    minSizeKg: 1,
+    available: true,
+    imageUrl: '', // Will auto-map to Unsplash waffle image
+    tags: ['waffle', 'classic', 'fresh']
+  },
+  {
+    name: 'Fluffy Buttermilk Pancakes',
+    description: 'Three light and airy pancakes stacked high, topped with fresh berries and a dollop of honey-butter.',
+    category: 'pancake',
+    pricePerKg: 150,
+    minSizeKg: 1,
+    available: true,
+    imageUrl: '', // Will auto-map to Unsplash pancake image
+    tags: ['pancake', 'breakfast', 'bestseller']
+  },
+  {
+    name: 'Masala Chai (MDU Special)',
+    description: 'Freshly brewed Indian black tea infused with ginger, cardamom, cloves, and whole milk. A local favorite!',
+    category: 'tea',
+    pricePerKg: 40,
+    minSizeKg: 1,
+    available: true,
+    imageUrl: '', // Will auto-map to Unsplash tea image
+    tags: ['tea', 'local', 'hot']
+  },
+  {
+    name: 'Classic Cappuccino',
+    description: 'Rich espresso shot topped with a thick layer of velvety steamed milk foam and a dash of cocoa powder.',
+    category: 'coffee',
+    pricePerKg: 90,
+    minSizeKg: 1,
+    available: true,
+    imageUrl: '', // Will auto-map to Unsplash coffee image
+    tags: ['coffee', 'hot', 'artisanal']
+  },
+  {
+    name: 'Classic Cold Coffee',
+    description: 'Smooth, chilled coffee blended with milk and vanilla ice cream, topped with chocolate drizzle.',
+    category: 'coffee',
+    pricePerKg: 120,
+    minSizeKg: 1,
+    available: true,
+    imageUrl: '', // Will auto-map to Unsplash cold coffee image
+    tags: ['coffee', 'cold', 'bestseller']
   }
 ];
 
@@ -69,7 +120,13 @@ const seedDatabase = async () => {
     console.log('🗑️ Existing products cleared');
 
     // Insert new products
-    await Product.insertMany(initialProducts);
+    const initialProductsMapped = initialProducts.map(p => {
+      if (!p.imageUrl || p.imageUrl.trim() === '') {
+        p.imageUrl = getMappedImage(p.name, p.category);
+      }
+      return p;
+    });
+    await Product.insertMany(initialProductsMapped);
     console.log('🌱 Seeded initial products successfully');
 
     // Close Connection

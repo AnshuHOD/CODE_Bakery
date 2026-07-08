@@ -10,12 +10,31 @@ const StatCard = ({ label, value, color }) => (
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     api.get('/admin/stats')
       .then(r => setStats(r.data.data))
-      .catch(err => console.error("Error loading dashboard stats", err));
+      .catch(err => {
+        console.error("Error loading dashboard stats", err);
+        setError(err.response?.data?.message || err.message);
+      });
   }, []);
+
+  if (error) {
+    return (
+      <div style={{ padding: '24px', background: '#FDEDEC', color: '#E74C3C', borderRadius: '12px', border: '1.5px solid #FADBD8', maxWidth: '500px' }}>
+        <h3 style={{ fontWeight: '700', marginBottom: '8px' }}>⚠️ Failed to Load Analytics</h3>
+        <p style={{ marginBottom: '16px' }}>{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={{ padding: '10px 20px', background: '#E74C3C', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 10px rgba(231, 76, 60, 0.2)' }}
+        >
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
 
   if (!stats) return <p style={{ fontSize: '16px', fontWeight: '600', color: '#1B2A4A' }}>Loading analytics... 🎂</p>;
 

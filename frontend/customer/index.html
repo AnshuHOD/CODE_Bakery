@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hooda's Bakery 🎂 — Fresh Baked With Love</title>
-  <link rel="stylesheet" href="css/style.css?v=1.2"/>
+  <link rel="stylesheet" href="css/style.css?v=4.6"/>
   <link rel="icon" type="image/png" href="favicon.png"/>
 </head>
 <body>
@@ -25,6 +25,80 @@
       <p>Artisanal custom cakes, warm sourdough loaves, and delicate pastries baked fresh daily and delivered straight to your doorstep.</p>
       <a href="menu.html" class="btn-primary">Browse Menu</a>
       <a href="order.html" class="btn-secondary">Order Now</a>
+    </div>
+  </section>
+
+  <!-- Interactive Custom Cake Designer Section -->
+  <section class="cake-designer-section">
+    <div class="section-header">
+      <span class="story-tag">Live Decorator</span>
+      <h2>Design Your Dream Custom Cake</h2>
+      <p>Configure your cake size, flavor, shape, and message below. Watch the price estimate adjust in real-time!</p>
+    </div>
+    
+    <div class="designer-grid">
+      <!-- Visual Preview Column -->
+      <div class="designer-preview-card">
+        <div class="preview-badge">✨ Live Preview</div>
+        <div class="cake-visualizer" id="cakeVisualizer">
+          <img src="images/cakes/chocolate_round.png" id="cakeVisualImg" alt="Custom Cake Preview" />
+          <div class="cake-message" id="visualMessage">Happy Birthday!</div>
+        </div>
+      </div>
+      
+      <!-- Controls Column -->
+      <div class="designer-controls-card">
+        <div class="designer-control-group">
+          <label>Select Sponge Flavor</label>
+          <select id="cakeFlavor" onchange="updateCakePreview()">
+            <option value="Chocolate" data-price="850">Rich Chocolate Truffle (₹850/kg)</option>
+            <option value="Vanilla" data-price="750">Classic Vanilla Sponge (₹750/kg)</option>
+            <option value="Red Velvet" data-price="950">Luxurious Red Velvet (₹950/kg)</option>
+            <option value="Pineapple" data-price="800">Fresh Tropical Pineapple (₹800/kg)</option>
+            <option value="Strawberry" data-price="850">Sweet Wild Strawberry (₹850/kg)</option>
+          </select>
+        </div>
+        
+
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: end;">
+          <div class="designer-control-group">
+            <label>Cake Shape</label>
+            <select id="cakeShape" onchange="updateCakePreview()">
+              <option value="round">Classic Round</option>
+              <option value="heart">Lovely Heart (+₹150)</option>
+              <option value="square">Modern Square (+₹100)</option>
+            </select>
+          </div>
+          <div class="designer-control-group">
+            <label>Cake Size / Weight</label>
+            <div class="stepper-container">
+              <button type="button" class="stepper-btn" onclick="adjustWeight(-0.5)">−</button>
+              <span class="stepper-val" id="weightVal">1.0 Kg</span>
+              <button type="button" class="stepper-btn" onclick="adjustWeight(0.5)">+</button>
+            </div>
+            <input type="hidden" id="cakeWeight" value="1.0" />
+          </div>
+        </div>
+        
+        <div class="designer-control-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="margin-bottom: 0;">Custom Message on Cake</label>
+            <span class="char-counter" id="charCounter">0 / 30</span>
+          </div>
+          <input type="text" id="cakeMessageText" maxlength="30" placeholder="e.g. Happy Birthday Vikram" oninput="updateCakePreview()" />
+        </div>
+        
+        <div class="price-estimate-box">
+          <div>
+            <span class="est-label" style="display: block;">Estimated Price:</span>
+            <span class="price-breakdown-text" id="priceBreakdown" style="font-size: 12px; color: #888; font-weight: 600; margin-top: 4px; display: block;">Base: ₹850 · Size: 1.0 Kg</span>
+          </div>
+          <span class="est-price" id="estimatedPrice">₹850.00</span>
+        </div>
+        
+        <button onclick="orderCustomDesignedCake()" class="btn-primary" style="width: 100%; margin-top: 12px; border-radius: 8px;">Order This Custom Cake →</button>
+      </div>
     </div>
   </section>
 
@@ -52,8 +126,7 @@
         </div>
       </div>
       <div class="story-image-container">
-        <!-- Image representing the user's reference of cozy wooden display shelves -->
-        <img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=800" alt="Our Warm Bakery Display Cabinet" class="story-img"/>
+        <img src="images/bakery_interior.png" alt="Our Warm Bakery Ambiance" class="story-img"/>
         <div class="glow-card">
           <p>✨ Warm hearth-baked goodies waiting for you daily!</p>
         </div>
@@ -118,46 +191,222 @@
     </div>
     <div class="gallery-grid">
       <div class="gallery-item item-large">
-        <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=800" alt="Baskets of Sourdough" />
-        <div class="gallery-overlay"><h4>Slow-Rise Sourdough Baskets</h4></div>
+        <img src="images/bakery_exterior.png" alt="Hooda's Bakery Exterior in Rohtak" />
+        <div class="gallery-overlay"><h4>Hooda's Bakery Facade (Rohtak)</h4></div>
       </div>
       <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1517433456452-f9633a875f6f?q=80&w=600" alt="Dusting Flour on Dough" />
-        <div class="gallery-overlay"><h4>Handmade Craft</h4></div>
+        <img src="images/bakery_counter.png" alt="Espresso Bar and Bakery Counter" />
+        <div class="gallery-overlay"><h4>Artisanal Coffee Bar</h4></div>
       </div>
       <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1498804103079-a6351b050096?q=80&w=600" alt="Freshly Baked Croissants" />
-        <div class="gallery-overlay"><h4>Cozy Mornings</h4></div>
+        <img src="images/bakery_menu.png" alt="Artisanal Bakes Menu Card" />
+        <div class="gallery-overlay"><h4>Specialty Bakes & Brews</h4></div>
       </div>
       <div class="gallery-item item-wide">
-        <!-- Wooden bakery showcase image -->
-        <img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=1000" alt="Bakery Glass Showcase" />
-        <div class="gallery-overlay"><h4>Fresh Daily Display</h4></div>
+        <img src="images/bakery_interior.png" alt="Study and Work Ambiance Inside Hooda's Bakery" />
+        <div class="gallery-overlay"><h4>Cozy Reading & Workspaces</h4></div>
       </div>
     </div>
   </section>
 
-  <!-- Love Letters (Testimonials) Section -->
+  <!-- Visit Our Bakery Section -->
+  <section class="visit-section">
+    <div class="visit-container">
+      <div class="visit-glass-card">
+        <div class="visit-header">
+          <span class="story-tag" style="background: rgba(217, 123, 102, 0.2); color: #FFF; border-color: rgba(255,255,255,0.3);">Visit Us</span>
+          <h2>Experience Hooda's Bakery In Rohtak</h2>
+          <p>We are situated opposite Maharshi Dayanand University (MDU) Gate No. 2. Step in to enjoy the rich aroma of freshly baked treats, specialty brews, and the cozy colonial red brick charm. A perfect place to relax, study, or work.</p>
+        </div>
+        
+        <div class="visit-details-grid">
+          <div class="visit-info-card">
+            <span class="icon">📍</span>
+            <h4>Address</h4>
+            <p>Opposite M.D. University (MDU) Gate No. 2,<br>Delhi Road, Rohtak, Haryana 124001</p>
+          </div>
+          <div class="visit-info-card">
+            <span class="icon">⏰</span>
+            <h4>Timings</h4>
+            <p>Open Daily<br>10:00 A.M. – 9:00 P.M.</p>
+          </div>
+          <div class="visit-info-card">
+            <span class="icon">🍞</span>
+            <h4>What We Offer</h4>
+            <p>Specialty Bakes, Warm Breads, Premium Cakes, Cozy Workspaces</p>
+          </div>
+          <div class="visit-info-card">
+            <span class="icon">📞</span>
+            <h4>Contact</h4>
+            <p>Phone: +91 81998-20779<br>Email: anshuh027@gmail.com</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Love Letters (Testimonials) Section with slider -->
   <section class="testimonials-section">
     <div class="section-header">
+      <span class="story-tag">Reviews</span>
       <h2>Love Letters From Our Guests</h2>
       <p>Nothing makes us happier than hearing the smiles we bring with every single bite.</p>
     </div>
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <div class="stars">⭐⭐⭐⭐⭐</div>
-        <p>"The slow-fermented sourdough has become a daily necessity in our home. It has the perfect crust and sour crumb!"</p>
-        <div class="reviewer">- Anshul H.</div>
+    
+    <div class="testimonial-slider-container">
+      <div class="testimonial-slides" id="testimonialSlides">
+        <!-- Slide 1 -->
+        <div class="testimonial-slide active">
+          <div class="stars">⭐⭐⭐⭐⭐</div>
+          <p class="review-text">"The slow-fermented sourdough has become a daily necessity in our home. It has the perfect crunchy crust and soft, airy sour crumb!"</p>
+          <h4 class="reviewer">- Anshul H.</h4>
+        </div>
+        <!-- Slide 2 -->
+        <div class="testimonial-slide">
+          <div class="stars">⭐⭐⭐⭐⭐</div>
+          <p class="review-text">"Ordered a custom Chocolate Truffle Cake for my anniversary. The design was gorgeous and it tasted absolutely heavenly!"</p>
+          <h4 class="reviewer">- Riya S.</h4>
+        </div>
+        <!-- Slide 3 -->
+        <div class="testimonial-slide">
+          <div class="stars">⭐⭐⭐⭐⭐</div>
+          <p class="review-text">"BakeBot qualified my custom order in a minute, and got the PDF invoice in my inbox instantly. Top-notch automation!"</p>
+          <h4 class="reviewer">- Kabir D.</h4>
+        </div>
       </div>
-      <div class="testimonial-card">
-        <div class="stars">⭐⭐⭐⭐⭐</div>
-        <p>"Ordered a custom Chocolate Truffle Cake for my anniversary. The design was gorgeous and it tasted absolutely heavenly!"</p>
-        <div class="reviewer">- Riya S.</div>
+      
+      <div class="slider-controls">
+        <button class="slider-arrow" onclick="moveSlide(-1)">❮</button>
+        <div class="slider-dots" id="sliderDots">
+          <span class="dot active" onclick="setSlide(0)"></span>
+          <span class="dot" onclick="setSlide(1)"></span>
+          <span class="dot" onclick="setSlide(2)"></span>
+        </div>
+        <button class="slider-arrow" onclick="moveSlide(1)">❯</button>
       </div>
-      <div class="testimonial-card">
-        <div class="stars">⭐⭐⭐⭐⭐</div>
-        <p>"BakeBot qualified my custom order in a minute, and got the PDF invoice in my inbox instantly. Top-notch automation!"</p>
-        <div class="reviewer">- Kabir D.</div>
+    </div>
+  </section>
+
+  <!-- Guest Feedback Section -->
+  <section class="guest-feedback-section">
+    <div class="guest-feedback-container">
+      <div class="guest-feedback-card">
+        <h3>Share Your Sweet Feedback 🌟</h3>
+        <p class="subtitle">Your suggestions help us bake better! If you have visited our bakery or ordered from us, please share your review below.</p>
+        
+        <form id="guestFeedbackForm" onsubmit="submitGuestFeedback(event)">
+          <div class="feedback-form-row">
+            <div class="feedback-form-group">
+              <label for="gName">Your Name</label>
+              <input type="text" id="gName" required placeholder="e.g. Vikram Hooda" />
+            </div>
+            <div class="feedback-form-group">
+              <label for="gEmail">Your Email</label>
+              <input type="email" id="gEmail" required placeholder="e.g. yourname@gmail.com" />
+            </div>
+          </div>
+          
+          <div class="feedback-form-group">
+            <label style="text-align: center; margin-bottom: 0;">Overall Rating</label>
+            <div class="star-rating">
+              <input type="radio" id="gStar5" name="guestRating" value="5" required/><label for="gStar5">★</label>
+              <input type="radio" id="gStar4" name="guestRating" value="4"/><label for="gStar4">★</label>
+              <input type="radio" id="gStar3" name="guestRating" value="3"/><label for="gStar3">★</label>
+              <input type="radio" id="gStar2" name="guestRating" value="2"/><label for="gStar2">★</label>
+              <input type="radio" id="gStar1" name="guestRating" value="1"/><label for="gStar1">★</label>
+            </div>
+          </div>
+          
+          <div class="feedback-form-group">
+            <label for="gComment">Review & Suggestions</label>
+            <textarea id="gComment" rows="4" required placeholder="Tell us about your experience, food quality, or service..."></textarea>
+          </div>
+          
+          <div class="feedback-form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="gRecommend" checked/>
+              Would you recommend Hooda's Bakery to others?
+            </label>
+          </div>
+          
+          <button type="submit" class="btn-primary" id="gSubmitBtn" style="width: 100%; border-radius: 50px; margin-top: 16px; padding: 14px; background: var(--navy);">Submit Guest Review →</button>
+        </form>
+        
+        <div id="gSuccessMessage" style="display: none; text-align: center; padding: 20px 0;">
+          <div style="font-size: 48px; margin-bottom: 12px;">🌟</div>
+          <h3 style="color: var(--teal); font-weight: 800; margin-bottom: 8px;">Review Submitted!</h3>
+          <p>Thank you so much! Your review has been logged into our guestbook and sent to our baking team.</p>
+          <button type="button" onclick="resetGuestFeedbackForm()" class="btn-primary" style="margin-top: 16px; border-radius: 50px; background: var(--navy);">Write Another Review</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Connect on WhatsApp Section -->
+  <section class="whatsapp-connect-section">
+    <div class="whatsapp-container">
+      <div class="whatsapp-card">
+        <div class="whatsapp-content">
+          <div class="whatsapp-badge">⚡ Instant Support</div>
+          <h2>Got Questions? Chat With Us! 💬</h2>
+          <p>Click below to connect with us on WhatsApp. Whether you want to customize a cake, enquire about bulk orders, or check today's specials, we are just a message away!</p>
+          <a href="javascript:void(0)" 
+             class="btn-whatsapp" 
+             onclick="openWhatsAppModal()">
+            <span class="whatsapp-icon">💬</span> Connect on WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Accordion Section -->
+  <section class="faq-accordion-section">
+    <div class="section-header">
+      <span class="story-tag">FAQ</span>
+      <h2>Frequently Asked Questions</h2>
+      <p>Have questions about orders, ingredients, or deliveries? We've got you covered.</p>
+    </div>
+    
+    <div class="faq-container">
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span>🥚 Do you offer eggless options for cakes?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>Yes, absolutely! Almost all of our cakes can be prepared eggless upon request. Simply select your cake, and specify your eggless preference in the customization notes during checkout.</p>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span>🛵 What is your delivery range and timing?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>We deliver city-wide within a 15km radius of our main kitchen from 9:00 AM to 9:00 PM. Delivery fees depend on your exact distance and are computed at checkout.</p>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span>⏰ Can I get same-day delivery?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>Yes! We support same-day delivery for standard items if ordered within our kitchen operating hours. For highly complex custom cakes, we recommend booking at least 24 hours in advance to guarantee chef availability.</p>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span>💳 What payment options do you support?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>We support secure online payments including UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards, and Netbanking via our secure checkout gateway.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -179,14 +428,324 @@
 
   <!-- Smart Chatbot Script & Trigger -->
   <script src="js/config.js"></script>
-  <script src="js/chatbot.js"></script>
+  <script src="js/chatbot.js?v=3.5"></script>
   <script>
+    // Custom Cake Designer Script
+
+    function adjustWeight(amount) {
+      const input = document.getElementById('cakeWeight');
+      let val = parseFloat(input.value) + amount;
+      if (val < 0.5) val = 0.5;
+      if (val > 5.0) val = 5.0;
+      input.value = val.toFixed(1);
+      document.getElementById('weightVal').innerText = `${val.toFixed(1)} Kg`;
+      updateCakePreview();
+    }
+    
+    const CAKE_VISUALS = {
+      "Chocolate": {
+        "round": "images/cakes/chocolate_round.png",
+        "heart": "images/cakes/chocolate_heart.png",
+        "square": "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?q=80&w=600"
+      },
+      "Vanilla": {
+        "round": "images/cakes/vanilla_round.png",
+        "heart": "images/cakes/vanilla_heart.png",
+        "square": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=600"
+      },
+      "Red Velvet": {
+        "round": "https://images.unsplash.com/photo-1586985289688-ca9cf47d3e6e?q=80&w=600",
+        "heart": "images/cakes/red_velvet_heart.png",
+        "square": "https://images.unsplash.com/photo-1616541823729-00fe0aacd32c?q=80&w=600"
+      },
+      "Pineapple": {
+        "round": "images/cakes/pineapple_round.png",
+        "heart": "images/cakes/pineapple_heart.png",
+        "square": "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?q=80&w=600"
+      },
+      "Strawberry": {
+        "round": "images/cakes/strawberry_round.png",
+        "heart": "images/cakes/strawberry_heart.png",
+        "square": "https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=600"
+      }
+    };
+
+    function updateCakePreview() {
+      const flavor = document.getElementById('cakeFlavor').value;
+      const weight = parseFloat(document.getElementById('cakeWeight').value);
+      const shape = document.getElementById('cakeShape').value;
+      const msg = document.getElementById('cakeMessageText').value.trim();
+      
+      // Update weight label
+      document.getElementById('weightVal').innerText = `${weight.toFixed(1)} Kg`;
+      
+      // Load real photo
+      const imgEl = document.getElementById('cakeVisualImg');
+      if (imgEl && CAKE_VISUALS[flavor] && CAKE_VISUALS[flavor][shape]) {
+        imgEl.src = CAKE_VISUALS[flavor][shape];
+        imgEl.alt = `${flavor} Cake in ${shape} shape`;
+      }
+
+      
+      // Update character counter
+      const counterEl = document.getElementById('charCounter');
+      if (counterEl) {
+        counterEl.innerText = `${msg.length} / 30`;
+      }
+      
+      // Update text message display
+      const visualMsg = document.getElementById('visualMessage');
+      if (visualMsg) {
+        if (msg) {
+          visualMsg.innerText = msg;
+          visualMsg.style.display = 'block';
+        } else {
+          visualMsg.style.display = 'none';
+        }
+      }
+      
+      // Calculate Price & Update Breakdown details
+      const selectFlav = document.getElementById('cakeFlavor');
+      if (selectFlav) {
+        const basePrice = parseFloat(selectFlav.options[selectFlav.selectedIndex].getAttribute('data-price'));
+        let total = basePrice * weight;
+        
+        const shapeAddon = shape === 'round' ? 0 : (shape === 'heart' ? 150 : 100);
+        total += shapeAddon;
+        
+        const estPriceEl = document.getElementById('estimatedPrice');
+        if (estPriceEl) {
+          estPriceEl.innerText = `₹${total.toFixed(2)}`;
+        }
+        
+        const breakdownText = `Base: ₹${basePrice}/kg · Size: ${weight.toFixed(1)} Kg` + (shapeAddon ? ` · Shape: +₹${shapeAddon}` : '');
+        const breakdownEl = document.getElementById('priceBreakdown');
+        if (breakdownEl) {
+          breakdownEl.innerText = breakdownText;
+        }
+      }
+    }
+    
+    function orderCustomDesignedCake() {
+      const flavor = document.getElementById('cakeFlavor').value;
+      const weight = parseFloat(document.getElementById('cakeWeight').value);
+      const shape = document.getElementById('cakeShape').value;
+      const msg = document.getElementById('cakeMessageText').value.trim();
+      
+      const params = new URLSearchParams({
+        custom: 'true',
+        flavor: flavor,
+        weight: weight,
+        shape: shape,
+        message: msg,
+        frosting: 'Standard'
+      });
+      window.location.href = `order.html?${params.toString()}`;
+    }
+    
+    // FAQ Accordion Script
+    function toggleFaq(btn) {
+      const answer = btn.nextElementSibling;
+      const icon = btn.querySelector('.faq-icon');
+      
+      if (answer.style.maxHeight) {
+        answer.style.maxHeight = null;
+        icon.innerText = '+';
+        btn.classList.remove('active');
+      } else {
+        document.querySelectorAll('.faq-answer').forEach(ans => ans.style.maxHeight = null);
+        document.querySelectorAll('.faq-icon').forEach(ic => ic.innerText = '+');
+        document.querySelectorAll('.faq-question').forEach(q => q.classList.remove('active'));
+        
+        answer.style.maxHeight = answer.scrollHeight + "px";
+        icon.innerText = '−';
+        btn.classList.add('active');
+      }
+    }
+    
+    // Testimonials Carousel Script
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.testimonial-slide');
+    const dots = document.querySelectorAll('.slider-dots .dot');
+    
+    function showSlide(index) {
+      if (slides.length === 0) return;
+      if (index >= slides.length) currentSlide = 0;
+      else if (index < 0) currentSlide = slides.length - 1;
+      else currentSlide = index;
+      
+      slides.forEach(s => s.classList.remove('active'));
+      dots.forEach(d => d.classList.remove('active'));
+      
+      slides[currentSlide].classList.add('active');
+      dots[currentSlide].classList.add('active');
+    }
+    
+    function moveSlide(dir) {
+      showSlide(currentSlide + dir);
+    }
+    
+    function setSlide(idx) {
+      showSlide(idx);
+    }
+    
+    // Guest Feedback Submission
+    async function submitGuestFeedback(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('gName').value.trim();
+      const email = document.getElementById('gEmail').value.trim();
+      const rating = document.querySelector('input[name="guestRating"]:checked').value;
+      const comment = document.getElementById('gComment').value.trim();
+      const recommend = document.getElementById('gRecommend').checked;
+      
+      const btn = document.getElementById('gSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting Review...';
+      
+      try {
+        const res = await fetch(`${CONFIG.API_BASE}/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rating: parseInt(rating),
+            comment: comment,
+            wouldRecommend: recommend,
+            guestName: name,
+            guestEmail: email
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('guestFeedbackForm').style.display = 'none';
+          document.getElementById('gSuccessMessage').style.display = 'block';
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (err) {
+        alert("Failed to submit feedback: " + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Submit Guest Review →';
+      }
+    }
+    
+    function resetGuestFeedbackForm() {
+      document.getElementById('guestFeedbackForm').reset();
+      document.getElementById('guestFeedbackForm').style.display = 'block';
+      document.getElementById('gSuccessMessage').style.display = 'none';
+      const btn = document.getElementById('gSubmitBtn');
+      btn.disabled = false;
+      btn.textContent = 'Submit Guest Review →';
+    }
+
+    function showWhatsAppToast() {
+      const toast = document.getElementById('whatsappToast');
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 5000);
+    }
+
+    function openWhatsAppModal() {
+      document.getElementById('whatsappModal').style.display = 'flex';
+      document.getElementById('waPhone').focus();
+    }
+
+    function closeWhatsAppModal() {
+      document.getElementById('whatsappModal').style.display = 'none';
+      document.getElementById('waPhone').value = '';
+    }
+
+    async function submitWhatsAppLead() {
+      const phoneInput = document.getElementById('waPhone');
+      const phone = phoneInput.value.trim();
+      
+      // Basic 10 digit check
+      if (!phone || !/^\d{10}$/.test(phone)) {
+        alert("Please enter a valid 10-digit mobile number!");
+        phoneInput.focus();
+        return;
+      }
+
+      // Close the modal immediately to make redirect smooth
+      closeWhatsAppModal();
+      showWhatsAppToast();
+
+      // Trigger redirect to WhatsApp
+      const waLink = `https://wa.me/918199820779?text=Hello%20Hooda's%20Bakery!%20I%20would%20like%20to%20enquire%20about%20your%20delightful%20treats.%20%F0%9F%99%8F%F0%9F%8E%82`;
+      window.open(waLink, '_blank');
+
+      // Asynchronously log the lead to DB
+      try {
+        await fetch(`${CONFIG.API_BASE}/leads`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: 'WhatsApp Visitor',
+            phone: phone,
+            source: 'whatsapp',
+            notes: 'Visitor clicked WhatsApp Connect button and entered their number.'
+          })
+        });
+      } catch (err) {
+        console.error("Failed to log WhatsApp lead:", err);
+      }
+    }
+
+    // Chatbot Toggle
     function toggleChatbot() {
       const container = document.querySelector('.chatbot-container');
       if (container) {
         container.classList.toggle('open');
       }
     }
+    
+    // Initialize things on load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Trigger initial preview update
+      if (document.getElementById('cakeFlavor')) {
+        updateCakePreview();
+      }
+      
+      // Auto-slide reviews every 5 seconds
+      if (slides.length > 0) {
+        setInterval(() => {
+          moveSlide(1);
+        }, 5000);
+      }
+    });
   </script>
+
+  <!-- WhatsApp Phone Prompt Modal -->
+  <div id="whatsappModal" class="whatsapp-modal-overlay">
+    <div class="whatsapp-modal-card">
+      <div class="whatsapp-modal-header">
+        <h3>💬 Connect via WhatsApp</h3>
+        <button type="button" class="whatsapp-modal-close" onclick="closeWhatsAppModal()">×</button>
+      </div>
+      <div class="whatsapp-modal-body">
+        <p>Please enter your 10-digit phone number to start chatting with Hooda's Bakery on WhatsApp:</p>
+        <div class="feedback-form-group" style="margin-bottom: 20px;">
+          <label for="waPhone" style="font-family: 'Fredoka', sans-serif; font-weight: 600; color: var(--navy); font-size: 14px; margin-bottom: 8px; display: block;">Mobile Number</label>
+          <input type="tel" id="waPhone" placeholder="e.g. 9876543210" required maxlength="10" 
+                 style="width: 100% !important; padding: 14px 18px !important; border-radius: 12px !important; border: 2px solid #EFE7DE !important; font-family: inherit !important; font-size: 14.5px !important; outline: none !important; background: #FAF6F0 !important; color: #3D2620 !important;"/>
+        </div>
+        <button type="button" class="btn-whatsapp" onclick="submitWhatsAppLead()" style="width: 100%; border-radius: 50px; justify-content: center; padding: 14px;">
+          Start WhatsApp Chat →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Toast Notification -->
+  <div id="whatsappToast" class="whatsapp-toast">
+    <div class="toast-emoji">💖</div>
+    <div class="toast-text">
+      <h4>Thank you for choosing Hooda's Bakery!</h4>
+      <p>Humari team aapse bohot jaldi connect karegi! 🙏✨</p>
+    </div>
+  </div>
 </body>
 </html>

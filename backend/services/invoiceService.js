@@ -21,82 +21,92 @@ const generateInvoice = (order) => {
     const writeStream = fs.createWriteStream(filePath);
     doc.pipe(writeStream);
 
-    // --- Header ---
-    doc.fillColor('#1B2A4A').fontSize(24).font('Helvetica-Bold').text("Hooda's Bakery", 50, 50);
-    doc.fontSize(10).fillColor('#555').text('Delivering Happiness, One Slice at a Time', 50, 80);
-    doc.moveTo(50, 100).lineTo(545, 100).strokeColor('#1B2A4A').stroke();
+    // --- Premium Brand Banner ---
+    doc.rect(0, 0, 595, 80).fill('#3E2723');
+    doc.fillColor('#FFFFFF').fontSize(24).font('Helvetica-Bold').text("Hooda's Bakery", 50, 20);
+    doc.fontSize(9).fillColor('#EFEBE9').font('Helvetica-Oblique').text('Delivering Happiness, One Slice at a Time 🎂', 50, 52);
+    
+    doc.fillColor('#FFFFFF').fontSize(20).font('Helvetica-Bold').text('INVOICE', 300, 26, { width: 245, align: 'right' });
 
-    // INVOICE label
-    doc.fontSize(22).fillColor('#0F6E56').text('INVOICE', 400, 50, { align: 'right' });
-    doc.fontSize(10).fillColor('#333').text(`Invoice No: ${order.orderId}`, 400, 80, { align: 'right' });
-    doc.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, 400, 95, { align: 'right' });
+    // --- Side-by-Side Metadata Columns ---
+    // Left column: Bill To
+    doc.fillColor('#3E2723').fontSize(11).font('Helvetica-Bold').text('BILL TO:', 50, 105);
+    doc.font('Helvetica').fillColor('#333').fontSize(9)
+      .text(order.customer.name, 50, 120, { width: 230 })
+      .text(order.customer.email, 50, 133, { width: 230 })
+      .text(order.customer.phone, 50, 146, { width: 230 });
 
-    // --- Bill To ---
-    doc.moveDown(2);
-    doc.fillColor('#1B2A4A').fontSize(12).font('Helvetica-Bold').text('Bill To:');
-    doc.font('Helvetica').fillColor('#333').fontSize(10)
-      .text(order.customer.name)
-      .text(order.customer.email)
-      .text(order.customer.phone)
-      .text(`${order.deliveryAddress.street}, ${order.deliveryAddress.city} - ${order.deliveryAddress.pincode}`);
-
-    // Delivery Date
-    doc.moveDown().fillColor('#1B2A4A').font('Helvetica-Bold').text('Delivery Date:')
-      .font('Helvetica').fillColor('#333')
-      .text(new Date(order.deliveryDate).toLocaleDateString('en-IN', { dateStyle: 'long' }));
+    // Right column: Delivery Details
+    doc.fillColor('#3E2723').fontSize(11).font('Helvetica-Bold').text('DELIVERY DETAILS:', 300, 105);
+    doc.font('Helvetica').fillColor('#333').fontSize(9)
+      .text(`Invoice No: ${order.orderId}`, 300, 120, { width: 245 })
+      .text(`Order Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 300, 133, { width: 245 })
+      .text(`Address: ${order.deliveryAddress.street}, ${order.deliveryAddress.city} - ${order.deliveryAddress.pincode}`, 300, 146, { width: 245 })
+      .text(`Delivery Date: ${new Date(order.deliveryDate).toLocaleDateString('en-IN', { dateStyle: 'long' })}`, 300, 172, { width: 245 });
 
     // --- Items Table ---
-    doc.moveDown(2);
-    const tableTop = doc.y;
+    const tableTop = 210;
 
     // Table header background
-    doc.fillColor('#1B2A4A').rect(50, tableTop, 495, 22).fill();
-    doc.fillColor('white').fontSize(10).font('Helvetica-Bold')
-      .text('Item', 55, tableTop + 6)
-      .text('Flavour', 220, tableTop + 6)
-      .text('Size', 310, tableTop + 6)
-      .text('Rate/kg', 370, tableTop + 6)
-      .text('Amount', 460, tableTop + 6);
+    doc.fillColor('#3E2723').rect(50, tableTop, 495, 22).fill();
+    doc.fillColor('white').fontSize(9).font('Helvetica-Bold')
+      .text('Item Name', 55, tableTop + 6)
+      .text('Flavour', 200, tableTop + 6)
+      .text('Qty / Size', 290, tableTop + 6)
+      .text('Rate', 380, tableTop + 6)
+      .text('Amount', 470, tableTop + 6);
 
     // Table rows
     let rowY = tableTop + 28;
     order.items.forEach((item, idx) => {
-      const bg = idx % 2 === 0 ? '#F1EFE8' : 'white';
+      const bg = idx % 2 === 0 ? '#FDFBF7' : '#FFFFFF';
       doc.fillColor(bg).rect(50, rowY - 4, 495, 20).fill();
+      
+      // Draw subtle row separator
+      doc.strokeColor('#E0DCD5').lineWidth(0.5).moveTo(50, rowY + 16).lineTo(545, rowY + 16).stroke();
+      
+      const isCake = item.product && item.product.category === 'cake';
+      const qtyText = isCake ? `${item.sizeKg} kg` : `${item.sizeKg} pc`;
+      const rateText = isCake ? `Rs. ${item.pricePerKg}/kg` : `Rs. ${item.pricePerKg}/pc`;
+      const amountText = `Rs. ${item.subtotal}`;
+
       doc.fillColor('#333').font('Helvetica').fontSize(9)
-        .text(item.productName, 55, rowY)
-        .text(item.flavour || '-', 220, rowY)
-        .text(`${item.sizeKg} kg`, 310, rowY)
-        .text(`₹${item.pricePerKg}`, 370, rowY)
-        .text(`₹${item.subtotal}`, 460, rowY);
+        .text(item.productName, 55, rowY, { width: 140, height: 15, ellipsis: true })
+        .text(item.flavour || '-', 200, rowY, { width: 85, height: 15, ellipsis: true })
+        .text(qtyText, 290, rowY)
+        .text(rateText, 380, rowY)
+        .text(amountText, 470, rowY);
       rowY += 22;
     });
 
-    // Total row
-    doc.moveTo(50, rowY).lineTo(545, rowY).strokeColor('#1B2A4A').stroke();
+    // Total Amount Box
     rowY += 10;
-    doc.fillColor('#1B2A4A').fontSize(12).font('Helvetica-Bold')
-      .text('Total Amount:', 370, rowY)
-      .text(`₹${order.total}`, 460, rowY);
+    doc.fillColor('#FDFBF7').rect(350, rowY, 195, 30).fill();
+    doc.strokeColor('#3E2723').lineWidth(1).rect(350, rowY, 195, 30).stroke();
+    doc.fillColor('#3E2723').fontSize(11).font('Helvetica-Bold')
+      .text('Total Amount:', 360, rowY + 9)
+      .text(`Rs. ${order.total}`, 465, rowY + 9);
+    rowY += 45;
 
-    // Payment Status
-    doc.moveDown(3).fontSize(10).fillColor('#0F6E56').font('Helvetica-Bold')
-      .text(`✅ Payment Status: PAID`, 50);
-    doc.font('Helvetica').fillColor('#555')
-      .text(`Payment ID: ${order.payment.razorpayPaymentId}`)
-      .text(`Paid on: ${new Date(order.payment.paidAt).toLocaleString('en-IN')}`);
+    // Payment Block
+    doc.fillColor('#E1F5EE').rect(50, rowY, 495, 45).fill();
+    doc.strokeColor('#2ECC71').lineWidth(0.5).rect(50, rowY, 495, 45).stroke();
+    doc.fillColor('#0F6E56').fontSize(10).font('Helvetica-Bold')
+      .text(`✅ Payment Status: PAID`, 60, rowY + 8);
+    doc.font('Helvetica').fontSize(8.5).fillColor('#555')
+      .text(`Transaction Reference: ${order.payment.razorpayPaymentId} | Paid on: ${new Date(order.payment.paidAt).toLocaleString('en-IN')}`, 60, rowY + 24);
 
     // Special Instructions
     if (order.specialInstructions) {
-      doc.moveDown().fillColor('#1B2A4A').font('Helvetica-Bold').text('Special Instructions:')
-        .font('Helvetica').fillColor('#555').text(order.specialInstructions);
+      rowY += 60;
+      doc.fillColor('#3E2723').font('Helvetica-Bold').fontSize(10).text('Special Instructions:', 50, rowY);
+      doc.font('Helvetica').fillColor('#555').fontSize(9).text(order.specialInstructions, 50, rowY + 15, { width: 495 });
     }
 
-    // Footer
-    doc.moveTo(50, 750).lineTo(545, 750).strokeColor('#1B2A4A').stroke();
-    doc.fontSize(9).fillColor('#888')
-      .text("Thank you for choosing Hooda's Bakery! 🎂", 50, 760, { align: 'center' })
-      .text('Contact: yourbakery@gmail.com | This is a computer-generated invoice.', { align: 'center' });
+    // Centered Footer
+    doc.fontSize(8.5).fillColor('#999')
+      .text("Thank you for choosing Hooda's Bakery! 🎂", 50, 755, { align: 'center' })
+      .text('This is a computer-generated invoice and requires no signature.', { align: 'center' });
 
     doc.end();
     writeStream.on('finish', () => resolve(filePath));

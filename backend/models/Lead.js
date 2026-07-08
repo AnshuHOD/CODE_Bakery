@@ -13,7 +13,7 @@ const leadSchema = new mongoose.Schema({
   estimatedBudget: String,
   source: {
     type: String,
-    enum: ['website', 'email', 'walk-in', 'referral'],
+    enum: ['website', 'email', 'walk-in', 'referral', 'whatsapp'],
     default: 'website',
   },
   status: {

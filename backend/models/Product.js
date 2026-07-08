@@ -16,7 +16,7 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['cake', 'pastry', 'bread', 'cookie', 'other'],
+    enum: ['cake', 'pastry', 'bread', 'cookie', 'waffle', 'pancake', 'coffee', 'tea', 'other'],
     default: 'cake',
   },
   pricePerKg: {
