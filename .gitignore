@@ -11,3 +11,6 @@ backend/invoices/
 # Production build outputs
 dist/
 .DS_Store
+
+# Private credentials and links file
+project_info.md
