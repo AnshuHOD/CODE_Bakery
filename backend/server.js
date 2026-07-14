@@ -17,6 +17,7 @@ const leadRoutes = require('./routes/leads');
 const feedbackRoutes = require('./routes/feedback');
 const adminRoutes = require('./routes/admin');
 const chatbotRoutes = require('./routes/chatbot');
+const customerRoutes = require('./routes/customers');
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Health check route
 app.get('/health', (req, res) => res.json({ status: 'Bakery server is running 🎂', version: '1.0.1 - gemini-3.1-flash-lite' }));

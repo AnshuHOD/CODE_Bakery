@@ -84,10 +84,10 @@
         
         const urlParams = new URLSearchParams(window.location.search);
         
-        // Pre-fill customer details from chatbot lead link
-        const nameVal = urlParams.get('name');
-        const emailVal = urlParams.get('email');
-        const phoneVal = urlParams.get('phone');
+        // Pre-fill customer details from chatbot lead link or local profile session
+        const nameVal = urlParams.get('name') || localStorage.getItem('bakery_customer_name');
+        const emailVal = urlParams.get('email') || localStorage.getItem('bakery_customer_email');
+        const phoneVal = urlParams.get('phone') || localStorage.getItem('bakery_customer_phone');
         const addressVal = urlParams.get('address');
         const timeSlotVal = urlParams.get('timeSlot');
         const itemsVal = urlParams.get('items');
@@ -95,6 +95,7 @@
         if (nameVal) document.querySelector('[name="name"]').value = nameVal;
         if (emailVal) document.querySelector('[name="email"]').value = emailVal;
         if (phoneVal) document.querySelector('[name="phone"]').value = phoneVal;
+        
         if (addressVal) {
           let street = addressVal.trim();
           let city = "Rohtak"; // Default city
@@ -127,14 +128,30 @@
           if (document.querySelector('[name="pincode"]')) {
             document.querySelector('[name="pincode"]').value = pincode || "124001";
           }
+        } else {
+          // Pre-fill from localStorage if customer profile has saved address
+          const streetLocal = localStorage.getItem('bakery_customer_street');
+          const cityLocal = localStorage.getItem('bakery_customer_city');
+          const pincodeLocal = localStorage.getItem('bakery_customer_pincode');
+          
+          if (streetLocal && document.querySelector('[name="street"]')) {
+            document.querySelector('[name="street"]').value = streetLocal;
+          }
+          if (cityLocal && document.querySelector('[name="city"]')) {
+            document.querySelector('[name="city"]').value = cityLocal;
+          }
+          if (pincodeLocal && document.querySelector('[name="pincode"]')) {
+            document.querySelector('[name="pincode"]').value = pincodeLocal;
+          }
         }
+        
         if (timeSlotVal) {
           document.querySelector('[name="specialInstructions"]').value = `Preferred delivery time slot: ${timeSlotVal}`;
         }
         
-        // Check if there is an item ID in query params
         let itemParam = urlParams.get('item');
         const customParam = urlParams.get('custom') === 'true';
+        const isCartCheckout = urlParams.get('cart') === 'true';
         
         // Attempt to match itemsVal (from Chatbot lead) to a product
         if (itemsVal && !itemParam) {
@@ -149,8 +166,12 @@
         }
         
         if (customParam) {
-          // Find any cake item or default to first product
-          const cakeProduct = products.find(p => p.category === 'cake') || products[0];
+          const flavorVal = urlParams.get('flavor') || '';
+          let matchedProduct = null;
+          if (flavorVal) {
+            matchedProduct = products.find(p => p.category === 'cake' && p.name.toLowerCase().includes(flavorVal.toLowerCase()));
+          }
+          const cakeProduct = matchedProduct || products.find(p => p.category === 'cake') || products[0];
           const cakeId = cakeProduct ? cakeProduct._id : '';
           
           addItemRow(cakeId);
@@ -177,6 +198,23 @@
               const msgInput = firstRow.querySelector('[name="customMessage[]"]');
               if (msgInput) msgInput.value = messageVal;
             }
+          }
+        } else if (isCartCheckout) {
+          const cartData = JSON.parse(localStorage.getItem('bakery_cart') || '[]');
+          if (cartData && cartData.length > 0) {
+            // Clear default container content
+            document.getElementById('itemsContainer').innerHTML = '';
+            cartData.forEach(item => {
+              addItemRow(item.productId);
+              const rows = document.querySelectorAll('.item-row');
+              const lastRow = rows[rows.length - 1];
+              if (lastRow) {
+                const sizeInput = lastRow.querySelector('[name="sizeKg[]"]');
+                if (sizeInput) sizeInput.value = item.qty;
+              }
+            });
+          } else {
+            addItemRow();
           }
         } else {
           // Add first row normally
@@ -280,6 +318,7 @@
             sizeInput.placeholder = "Size (kg)";
             sizeInput.step = "0.5";
             sizeInput.min = pObj.minSizeKg;
+            sizeInput.max = 20;
             sizeInput.value = pObj.minSizeKg;
             
             flavourInput.style.display = "inline-block";
@@ -289,6 +328,7 @@
             sizeInput.step = "1";
             const minQty = Math.ceil(pObj.minSizeKg) || 1;
             sizeInput.min = minQty;
+            sizeInput.max = 100;
             sizeInput.value = minQty;
             
             flavourInput.style.display = "none";
@@ -318,6 +358,49 @@
 
         const product = products.find(p => p._id === pId);
         if (!product) continue;
+
+        // Frontend bounds validation
+        const isCake = product.category === 'cake';
+        if (isCake) {
+          if (size < product.minSizeKg) {
+            alert(`Minimum size for ${product.name} is ${product.minSizeKg} kg.`);
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+            return;
+          }
+          if (size > 20) {
+            alert(`Maximum size for ${product.name} is 20 kg.`);
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+            return;
+          }
+          if ((size * 10) % 5 !== 0) {
+            alert(`Size for ${product.name} must be in increments of 0.5 kg.`);
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+            return;
+          }
+        } else {
+          const minQty = Math.ceil(product.minSizeKg) || 1;
+          if (size < minQty) {
+            alert(`Minimum quantity for ${product.name} is ${minQty} pcs.`);
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+            return;
+          }
+          if (size > 100) {
+            alert(`Maximum quantity for ${product.name} is 100 pcs.`);
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+            return;
+          }
+          if (!Number.isInteger(size)) {
+            alert(`Quantity for ${product.name} must be a whole number.`);
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+            return;
+          }
+        }
 
         items.push({
           product: pId,
@@ -474,6 +557,7 @@
         const verifyData = await verifyRes.json();
         
         if (verifyData.success) {
+          localStorage.removeItem('bakery_cart');
           loadingText.innerText = 'Payment Successful! Redirecting... 🎉';
           await new Promise(r => setTimeout(r, 800));
           window.location.href = `confirmation.html?orderId=${currentOrderData.orderId}`;
@@ -525,6 +609,7 @@
             const verifyData = await verifyRes.json();
             
             if (verifyData.success) {
+              localStorage.removeItem('bakery_cart');
               window.location.href = `confirmation.html?orderId=${data.orderId}`;
             } else {
               alert('Payment Verification failed. Please check with your bank.');

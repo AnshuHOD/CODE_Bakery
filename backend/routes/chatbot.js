@@ -134,12 +134,12 @@ ${menuContext || "Premium Chocolate Truffle Cake, Blueberry Cheesecake Slice, Ar
       let reply = data.candidates[0].content.parts[0].text;
 
       // Extract and process structured order booking payload if present
-      const orderPayloadMatch = reply.match(/\|ORDER_DATA:(.*?)\|\|/);
+      const orderPayloadMatch = reply.match(/\|ORDER_DATA:([\s\S]*?)\|\|/);
       if (orderPayloadMatch && orderPayloadMatch[1]) {
         try {
-          const parsedLead = JSON.parse(orderPayloadMatch[1]);
+          const parsedLead = JSON.parse(orderPayloadMatch[1].trim());
           // Strip the structured block from user-facing text
-          reply = reply.replace(/\|ORDER_DATA:.*?\|\|/g, "").trim();
+          reply = reply.replace(/\|ORDER_DATA:[\s\S]*?\|\|/g, "").trim();
 
           // Save chatbot booking to MongoDB Lead model
           const newLead = new Lead({

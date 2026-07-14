@@ -10,6 +10,7 @@ export default function Menu() {
     description: '',
     category: 'cake',
     pricePerKg: 0,
+    pricePerPiece: 0,
     minSizeKg: 0.5,
     available: true,
     imageUrl: '',
@@ -32,7 +33,8 @@ export default function Menu() {
     const isCake = form.category === 'cake';
     const payload = {
       ...form,
-      pricePerKg: parseFloat(form.pricePerKg),
+      pricePerKg: parseFloat(form.pricePerKg) || 0,
+      pricePerPiece: parseFloat(form.pricePerPiece) || 0,
       minSizeKg: isCake ? parseFloat(form.minSizeKg) : parseInt(form.minSizeKg, 10) || 1,
       tags: form.tags.split(',').map(t => t.trim()).filter(t => t !== '')
     };
@@ -46,7 +48,7 @@ export default function Menu() {
         alert("Product created!");
       }
       setEditingId(null);
-      setForm({ name: '', description: '', category: 'cake', pricePerKg: 0, minSizeKg: 0.5, available: true, imageUrl: '', tags: '' });
+      setForm({ name: '', description: '', category: 'cake', pricePerKg: 0, pricePerPiece: 0, minSizeKg: 0.5, available: true, imageUrl: '', tags: '' });
       fetchProducts();
     } catch (err) {
       alert("Error saving product: " + err.message);
@@ -59,7 +61,8 @@ export default function Menu() {
       name: p.name,
       description: p.description || '',
       category: p.category,
-      pricePerKg: p.pricePerKg,
+      pricePerKg: p.pricePerKg || 0,
+      pricePerPiece: p.pricePerPiece || 0,
       minSizeKg: p.minSizeKg || 0.5,
       available: p.available,
       imageUrl: p.imageUrl || '',
@@ -121,13 +124,18 @@ export default function Menu() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="form-group">
-              <label className="form-label">{form.category === 'cake' ? 'Price per Kg (₹)' : 'Price per Piece (₹)'}</label>
+              <label className="form-label">Price per Kg (₹)</label>
               <input type="number" className="form-control" value={form.pricePerKg} onChange={e => setForm({...form, pricePerKg: e.target.value})} required min="0"/>
             </div>
             <div className="form-group">
-              <label className="form-label">{form.category === 'cake' ? 'Min Size (Kg)' : 'Min Quantity (Pieces)'}</label>
-              <input type="number" className="form-control" step={form.category === 'cake' ? "0.5" : "1"} value={form.minSizeKg} onChange={e => setForm({...form, minSizeKg: e.target.value})} required min={form.category === 'cake' ? "0.5" : "1"}/>
+              <label className="form-label">Price per Piece (₹)</label>
+              <input type="number" className="form-control" value={form.pricePerPiece} onChange={e => setForm({...form, pricePerPiece: e.target.value})} required min="0"/>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{form.category === 'cake' ? 'Min Size (Kg)' : 'Min Quantity (Pieces)'}</label>
+            <input type="number" className="form-control" step={form.category === 'cake' ? "0.5" : "1"} value={form.minSizeKg} onChange={e => setForm({...form, minSizeKg: e.target.value})} required min={form.category === 'cake' ? "0.5" : "1"}/>
           </div>
 
           <div className="form-group">
@@ -150,7 +158,7 @@ export default function Menu() {
             {editingId && (
               <button type="button" className="btn btn-secondary" onClick={() => {
                 setEditingId(null);
-                setForm({ name: '', description: '', category: 'cake', pricePerKg: 0, minSizeKg: 0.5, available: true, imageUrl: '', tags: '' });
+                setForm({ name: '', description: '', category: 'cake', pricePerKg: 0, pricePerPiece: 0, minSizeKg: 0.5, available: true, imageUrl: '', tags: '' });
               }}>Cancel</button>
             )}
           </div>
@@ -169,8 +177,9 @@ export default function Menu() {
                 <span className="badge" style={{ background: '#FAF5EB', color: '#1B2A4A', fontSize: '11px', padding: '2px 8px', marginBottom: '4px' }}>{p.category}</span>
                 <h4 style={{ color: '#1B2A4A', fontSize: '16px', fontWeight: '700' }}>{p.name}</h4>
                 <p style={{ color: '#666', fontSize: '13px', margin: '4px 0' }}>{p.description || 'No description provided.'}</p>
-                <div style={{ display: 'flex', gap: '16px', fontSize: '14px', fontWeight: '600' }}>
-                  <span style={{ color: '#0F6E56' }}>₹{p.pricePerKg}/{p.category === 'cake' ? 'kg' : 'pc'}</span>
+                <div style={{ display: 'flex', gap: '16px', fontSize: '13px', fontWeight: '600', flexWrap: 'wrap' }}>
+                  <span style={{ color: '#0F6E56' }}>Price/Kg: ₹{p.pricePerKg || 0}</span>
+                  <span style={{ color: '#0F6E56' }}>Price/Piece: ₹{p.pricePerPiece || 0}</span>
                   <span style={{ color: '#888' }}>Min: {p.minSizeKg} {p.category === 'cake' ? 'kg' : 'pc'}</span>
                   <span style={{ color: p.available ? '#2ECC71' : '#E74C3C' }}>
                     ● {p.available ? 'In Stock' : 'Out of Stock'}

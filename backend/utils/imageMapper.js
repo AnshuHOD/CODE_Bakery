@@ -9,8 +9,8 @@ const BAKERY_IMAGES = {
     pineapple: 'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?q=80&w=600',
     strawberry: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=600',
     blackforest: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?q=80&w=600',
-    cheesecake: 'https://images.unsplash.com/photo-1524351199679-46cddf530c04?q=80&w=600',
-    cheese: 'https://images.unsplash.com/photo-1524351199679-46cddf530c04?q=80&w=600',
+    cheesecake: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=600',
+    cheese: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=600',
     vanilla: 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?q=80&w=600',
     mango: 'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?q=80&w=600',
     fruit: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=600',
@@ -27,7 +27,7 @@ const BAKERY_IMAGES = {
     tart: 'https://images.unsplash.com/photo-1519869325930-281384150729?q=80&w=600',
     pie: 'https://images.unsplash.com/photo-1519869325930-281384150729?q=80&w=600',
     eclair: 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?q=80&w=600',
-    puff: 'https://images.unsplash.com/photo-1554018974-9965a6d05f6c?q=80&w=600',
+    puff: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?q=80&w=600',
     default: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?q=80&w=600'
   },
   bread: {
@@ -42,7 +42,7 @@ const BAKERY_IMAGES = {
   },
   cookie: {
     chocolate: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=600',
-    oatmeal: 'https://images.unsplash.com/photo-1558961309-db6f1856e57d?q=80&w=600',
+    oatmeal: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?q=80&w=600',
     chocochip: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=600',
     cookie: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=600',
     default: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=600'
@@ -55,14 +55,14 @@ const BAKERY_IMAGES = {
   },
   coffee: {
     cappuccino: 'https://images.unsplash.com/photo-1534778101976-62847782c213?q=80&w=600',
-    latte: 'https://images.unsplash.com/photo-1570968915860-54d5c301fc9f?q=80&w=600',
+    latte: 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=600',
     cold: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=600',
     default: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600'
   },
   tea: {
     chai: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?q=80&w=600',
     masala: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?q=80&w=600',
-    green: 'https://images.unsplash.com/photo-1627435601357-374b1be7b51b?q=80&w=600',
+    green: 'https://images.unsplash.com/photo-1597481499750-3e6b22637e12?q=80&w=600',
     default: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?q=80&w=600'
   },
   other: {

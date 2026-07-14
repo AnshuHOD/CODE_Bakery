@@ -162,7 +162,7 @@ function showOptions() {
   
   const options = [
     { text: '🚚 Track My Order', action: () => startTrackingFlow() },
-    { text: '🎂 Request Custom Cake (CRM Inquiry)', action: () => startLeadFlow() },
+    { text: '🎂 Request Custom Cake (CRM Inquiry)', action: () => startConversationalLeadFlow() },
     { text: '🍰 Browse Menu & Prices', action: () => showMenuInfo() },
     { text: '❓ Frequently Asked Questions', action: () => showFAQOptions() }
   ];
@@ -277,7 +277,13 @@ async function handleTracking(orderId) {
   showOptions();
 }
 
-// CRM LEAD INTAKE FLOW (QUALIFICATION)
+// CRM LEAD INTAKE FLOW (CONVERSATIONAL AI)
+function startConversationalLeadFlow() {
+  botState = 'idle';
+  addBotMessage("I'd love to help you customize a cake! Tell me about the cake you're dreaming of (e.g. flavour, event theme, size, shape, dietary preferences), or feel free to ask me for recommendations or pricing! 🎂");
+}
+
+// CRM LEAD INTAKE FLOW (QUALIFICATION) - Fallback/Legacy
 function startLeadFlow() {
   const savedName = localStorage.getItem('bakery_customer_name');
   if (savedName) {

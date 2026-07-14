@@ -7,6 +7,209 @@
   <link rel="stylesheet" href="css/style.css?v=4.6"/>
   <link rel="icon" type="image/png" href="favicon.png"/>
   <script src="js/config.js"></script>
+  <style>
+    .floating-cart-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #0F6E56;
+      color: white;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0px 8px 24px rgba(15, 110, 86, 0.3);
+      z-index: 999;
+      transition: transform 0.2s ease;
+    }
+    .floating-cart-btn:hover {
+      transform: scale(1.1);
+    }
+    .floating-cart-btn #cartCount {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #E74C3C;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+    }
+    .cart-drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .cart-drawer-overlay.open {
+      display: block;
+      opacity: 1;
+    }
+    .cart-drawer {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100%;
+      background: white;
+      z-index: 1001;
+      box-shadow: -8px 0px 32px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cart-drawer.open {
+      right: 0;
+    }
+    .cart-header {
+      padding: 20px;
+      border-bottom: 1px solid #F0E6DF;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FAF6F0;
+    }
+    .cart-header h3 {
+      margin: 0;
+      font-family: 'Fredoka', sans-serif;
+      color: #1B2A4A;
+    }
+    .close-cart-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #666;
+      cursor: pointer;
+    }
+    .cart-items-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .cart-item {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #FAF6F0;
+    }
+    .cart-item img {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .cart-item-placeholder {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      background: #E1F5EE;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .cart-item-details {
+      flex: 1;
+    }
+    .cart-item-details h4 {
+      margin: 0 0 4px 0;
+      font-size: 14px;
+      color: #1B2A4A;
+      font-weight: 700;
+    }
+    .cart-item-details .price {
+      color: #0F6E56;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .cart-item-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .cart-qty-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1px solid #DDD;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #555;
+    }
+    .cart-qty-val {
+      font-size: 14px;
+      font-weight: 600;
+      min-width: 40px;
+      text-align: center;
+    }
+    .remove-cart-item {
+      background: none;
+      border: none;
+      color: #E74C3C;
+      cursor: pointer;
+      font-size: 16px;
+      margin-left: auto;
+    }
+    .cart-footer {
+      padding: 20px;
+      border-top: 1px solid #F0E6DF;
+      background: #FAF6F0;
+    }
+    .cart-total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1B2A4A;
+      margin-bottom: 16px;
+    }
+    .checkout-btn {
+      width: 100%;
+      background: #0F6E56;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .checkout-btn:hover {
+      background: #0D5F49;
+    }
+    .empty-cart-msg {
+      text-align: center;
+      color: #888;
+      margin-top: 40px;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
   <nav class="navbar">
@@ -14,6 +217,7 @@
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="order.html" class="btn-nav">Order Now</a>
+      <span id="navAuthSection" style="margin-left: 10px; display: inline-flex; align-items: center;"></span>
     </div>
   </nav>
 
@@ -39,6 +243,32 @@
       <p class="loading">Loading menu... 🎂</p>
     </div>
   </main>
+
+  <!-- Floating Cart Button -->
+  <div class="floating-cart-btn" id="floatingCartBtn" onclick="toggleCartDrawer(true)" style="display: none;">
+    🛒 <span id="cartCount">0</span>
+  </div>
+
+  <!-- Cart Drawer Overlay -->
+  <div class="cart-drawer-overlay" id="cartOverlay" onclick="toggleCartDrawer(false)"></div>
+
+  <!-- Cart Drawer -->
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-header">
+      <h3>🛒 Shopping Cart</h3>
+      <button class="close-cart-btn" onclick="toggleCartDrawer(false)">✕</button>
+    </div>
+    <div class="cart-items-list" id="cartItemsList">
+      <!-- Items will be populated here -->
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total-row">
+        <span>Total:</span>
+        <span id="cartTotalVal">₹0.00</span>
+      </div>
+      <button class="checkout-btn" onclick="proceedToCheckout()">Checkout / Order Now →</button>
+    </div>
+  </div>
 
   <footer class="footer">
     <p>© 2026 Hooda's Bakery · Delivering Smiles, One Slice at a Time 🎂</p>
@@ -84,14 +314,170 @@
                 <span class="price">₹${p.pricePerKg} <span style="font-size: 14px; font-weight: 500; color: #888;">/ ${unitLabel}</span></span>
                 <span class="min-size">${sizeLabel}</span>
               </div>
-              <a href="order.html?item=${p._id}" class="btn-order">Order This</a>
+              <button onclick="addToCart('${p._id}')" class="btn-order" style="border:none; width:100%; text-align:center; display:block; cursor:pointer;">Add to Cart</button>
             </div>
           </div>
         `;
       }).join('');
     }
 
+    // Cart System JS Logic
+    let cart = JSON.parse(localStorage.getItem('bakery_cart') || '[]');
+
+    function saveCart() {
+      localStorage.setItem('bakery_cart', JSON.stringify(cart));
+      renderCart();
+    }
+
+    function toggleCartDrawer(show) {
+      const drawer = document.getElementById('cartDrawer');
+      const overlay = document.getElementById('cartOverlay');
+      if (show) {
+        drawer.classList.add('open');
+        overlay.classList.add('open');
+      } else {
+        drawer.classList.remove('open');
+        overlay.classList.remove('open');
+      }
+    }
+
+    function addToCart(productId) {
+      const p = allProducts.find(item => item._id === productId);
+      if (!p) return;
+
+      const isCake = p.category === 'cake';
+      const defaultQty = isCake ? (p.minSizeKg || 0.5) : (p.minSizeKg || 1);
+
+      const existing = cart.find(item => item.productId === productId);
+      if (existing) {
+        existing.qty += isCake ? 0.5 : 1;
+        // Enforce upper limits
+        const maxLimit = isCake ? 20 : 100;
+        if (existing.qty > maxLimit) existing.qty = maxLimit;
+      } else {
+        cart.push({
+          productId: p._id,
+          name: p.name,
+          price: p.pricePerKg,
+          category: p.category,
+          imageUrl: p.imageUrl,
+          qty: defaultQty,
+          minQty: defaultQty
+        });
+      }
+      saveCart();
+      toggleCartDrawer(true);
+    }
+
+    function updateCartQty(productId, amount) {
+      const item = cart.find(i => i.productId === productId);
+      if (!item) return;
+
+      const isCake = item.category === 'cake';
+      item.qty += isCake ? (amount * 0.5) : amount;
+      
+      const maxLimit = isCake ? 20 : 100;
+      if (item.qty > maxLimit) item.qty = maxLimit;
+
+      if (item.qty < item.minQty) {
+        removeFromCart(productId);
+      } else {
+        saveCart();
+      }
+    }
+
+    function removeFromCart(productId) {
+      cart = cart.filter(i => i.productId !== productId);
+      saveCart();
+    }
+
+    function renderCart() {
+      const list = document.getElementById('cartItemsList');
+      const countBtn = document.getElementById('floatingCartBtn');
+      const countVal = document.getElementById('cartCount');
+      const totalVal = document.getElementById('cartTotalVal');
+
+      if (cart.length > 0) {
+        countBtn.style.display = 'flex';
+        const totalItemsCount = cart.reduce((sum, item) => sum + (item.category === 'cake' ? 1 : item.qty), 0);
+        countVal.innerText = Math.round(totalItemsCount);
+      } else {
+        countBtn.style.display = 'none';
+        toggleCartDrawer(false);
+      }
+
+      let total = 0;
+      if (cart.length === 0) {
+        list.innerHTML = '<p class="empty-cart-msg">Your cart is empty. Add delicious treats from the menu!</p>';
+        totalVal.innerText = '₹0.00';
+        return;
+      }
+
+      list.innerHTML = cart.map(item => {
+        const unit = item.category === 'cake' ? 'kg' : 'pc';
+        const subtotal = item.qty * item.price;
+        total += subtotal;
+
+        return `
+          <div class="cart-item">
+            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}"/>` : '<div class="cart-item-placeholder">🎂</div>'}
+            <div class="cart-item-details">
+              <h4>${item.name}</h4>
+              <span class="price">₹${item.price}/${unit}</span>
+              <div class="cart-item-controls">
+                <button type="button" class="cart-qty-btn" onclick="updateCartQty('${item.productId}', -1)">−</button>
+                <span class="cart-qty-val">${item.qty.toFixed(item.category === 'cake' ? 1 : 0)} ${unit}</span>
+                <button type="button" class="cart-qty-btn" onclick="updateCartQty('${item.productId}', 1)">+</button>
+              </div>
+            </div>
+            <button type="button" class="remove-cart-item" onclick="removeFromCart('${item.productId}')">✕</button>
+          </div>
+        `;
+      }).join('');
+
+      totalVal.innerText = `₹${total.toFixed(2)}`;
+    }
+
+    function proceedToCheckout() {
+      if (cart.length === 0) {
+        alert("Please add items to your cart first!");
+        return;
+      }
+      window.location.href = `order.html?cart=true`;
+    }
+
+    function updateAuthNavbar() {
+      const email = localStorage.getItem('bakery_customer_email');
+      const name = localStorage.getItem('bakery_customer_name');
+      const container = document.getElementById('navAuthSection');
+      if (!container) return;
+
+      if (email && name) {
+        container.innerHTML = `
+          <span style="font-weight: 600; color: #1B2A4A; font-size: 14px;">Hi, ${name}! 👋</span>
+          <a href="#" onclick="logoutCustomer(event)" style="font-size: 12px; margin-left: 10px; color: #D97B66; font-weight: bold; text-decoration: underline;">Logout</a>
+        `;
+      } else {
+        container.innerHTML = `
+          <button onclick="window.location.href='index.html?login=true'" style="background: none; border: 1.5px solid #1B2A4A; color: #1B2A4A; padding: 6px 14px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Login</button>
+        `;
+      }
+    }
+
+    function logoutCustomer(e) {
+      if (e) e.preventDefault();
+      localStorage.removeItem('bakery_customer_email');
+      localStorage.removeItem('bakery_customer_name');
+      localStorage.removeItem('bakery_customer_phone');
+      localStorage.removeItem('bakery_customer_street');
+      localStorage.removeItem('bakery_customer_city');
+      localStorage.removeItem('bakery_customer_pincode');
+      updateAuthNavbar();
+    }
+
     loadMenu();
+    renderCart();
+    updateAuthNavbar();
   </script>
 
   <!-- Smart Chatbot Script -->

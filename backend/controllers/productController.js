@@ -42,6 +42,15 @@ const createProduct = async (req, res) => {
     if (!req.body.imageUrl || req.body.imageUrl.trim() === '' || !/^https?:\/\//i.test(req.body.imageUrl.trim())) {
       req.body.imageUrl = getMappedImage(req.body.name, req.body.category);
     }
+    if (req.body.category !== 'cake') {
+      if (req.body.pricePerPiece !== undefined) {
+        req.body.pricePerKg = req.body.pricePerPiece;
+      }
+    } else {
+      if (req.body.pricePerKg !== undefined && (req.body.pricePerPiece === undefined || req.body.pricePerPiece === 0)) {
+        req.body.pricePerPiece = 0;
+      }
+    }
     const product = await Product.create(req.body);
     res.status(201).json({ success: true, data: product });
   } catch (err) {
@@ -55,6 +64,15 @@ const updateProduct = async (req, res) => {
     // Auto-generate delicious food photo if blank or invalid URL
     if (!req.body.imageUrl || req.body.imageUrl.trim() === '' || !/^https?:\/\//i.test(req.body.imageUrl.trim())) {
       req.body.imageUrl = getMappedImage(req.body.name, req.body.category);
+    }
+    if (req.body.category !== 'cake') {
+      if (req.body.pricePerPiece !== undefined) {
+        req.body.pricePerKg = req.body.pricePerPiece;
+      }
+    } else {
+      if (req.body.pricePerKg !== undefined && (req.body.pricePerPiece === undefined || req.body.pricePerPiece === 0)) {
+        req.body.pricePerPiece = 0;
+      }
     }
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
       new: true, runValidators: true,

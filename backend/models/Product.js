@@ -21,7 +21,12 @@ const productSchema = new mongoose.Schema({
   },
   pricePerKg: {
     type: Number,
-    required: true,
+    default: 0,
+    min: 0,
+  },
+  pricePerPiece: {
+    type: Number,
+    default: 0,
     min: 0,
   },
   minSizeKg: {

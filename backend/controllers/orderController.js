@@ -12,6 +12,7 @@ const Customer = require('../models/Customer');
 const Lead = require('../models/Lead');
 const razorpay = require('../config/razorpay');
 const generateOrderId = require('../utils/generateOrderId');
+const Product = require('../models/Product');
 
 // POST /api/orders
 const placeOrder = async (req, res) => {
@@ -24,13 +25,46 @@ const placeOrder = async (req, res) => {
       customer = await Customer.create({ name, email, phone, address });
     }
 
-    // Step 2: Total calculate karo
+    // Step 2: Total calculate karo and validate limits
     let total = 0;
-    const processedItems = items.map(item => {
-      const subtotal = item.sizeKg * item.pricePerKg;
+    const processedItems = [];
+    
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      if (!product) {
+        return res.status(400).json({ success: false, message: `Product not found: ${item.productName}` });
+      }
+
+      const isCake = product.category === 'cake';
+      if (isCake) {
+        if (item.sizeKg < product.minSizeKg || item.sizeKg > 20) {
+          return res.status(400).json({ success: false, message: `Invalid size for ${product.name}. Must be between ${product.minSizeKg} kg and 20 kg.` });
+        }
+        if ((item.sizeKg * 10) % 5 !== 0) {
+          return res.status(400).json({ success: false, message: `Size for ${product.name} must be in increments of 0.5 kg.` });
+        }
+      } else {
+        const minQty = Math.ceil(product.minSizeKg) || 1;
+        if (item.sizeKg < minQty || item.sizeKg > 100) {
+          return res.status(400).json({ success: false, message: `Invalid quantity for ${product.name}. Must be between ${minQty} and 100 pieces.` });
+        }
+        if (!Number.isInteger(item.sizeKg)) {
+          return res.status(400).json({ success: false, message: `Quantity for ${product.name} must be an integer.` });
+        }
+      }
+
+      const subtotal = item.sizeKg * product.pricePerKg;
       total += subtotal;
-      return { ...item, subtotal };
-    });
+      processedItems.push({
+        ...item,
+        pricePerKg: product.pricePerKg,
+        subtotal
+      });
+    }
+
+    if (total > 100000) {
+      return res.status(400).json({ success: false, message: "Order total exceeds maximum limit of ₹1,00,000." });
+    }
 
     // Step 3: Lead record banao (CRM tracking ke liye)
     const lead = await Lead.create({
@@ -57,7 +91,6 @@ const placeOrder = async (req, res) => {
 
     // Step 5: Lead ko order se link karo
     lead.convertedOrderId = order._id;
-    lead.status = 'order_placed';
     await lead.save();
 
     // Step 6: Razorpay order create karo

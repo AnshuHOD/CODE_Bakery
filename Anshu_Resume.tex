@@ -1,0 +1,190 @@
+\documentclass[letterpaper,10pt]{article}
+
+\usepackage{latexsym}
+\usepackage[left=0.55in, right=0.55in, top=0.55in, bottom=0.55in]{geometry}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{fontawesome5} % For professional icons (map, phone, envelope, github, etc.)
+\input{glyphtounicode}
+
+% Use Helvetica (Sans-serif) font for a modern, clean, and spacious look
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Colors matching the original resume (Professional Dark Blue / Navy theme)
+\definecolor{primaryblue}{HTML}{1F4E79} % Deep blue for titles/icons
+\definecolor{charcoal}{HTML}{333333} % Dark grey for body text
+\definecolor{linkblue}{HTML}{2B6CB0} % Slate blue for links
+
+% Set text color for the document
+\color{charcoal}
+
+% Custom section command to include icons and matching horizontal line
+\newcommand{\resumeSection}[2]{
+  \vspace{12pt}
+  \textbf{\large\color{primaryblue}#1\hspace{0.5em}#2}
+  \vspace{2pt}
+  {\color{primaryblue}\hrule}
+  \vspace{5pt}
+}
+
+% Ensure machine-readability for ATS parsers
+\pdfgentounicode=1
+
+% Spacing for bullet points (optimized for a clean, spacious recruiter-friendly look)
+\setlist[itemize]{leftmargin=0.15in, topsep=2pt, itemsep=1.5pt, parsep=0pt, partopsep=0pt}
+
+%-------------------------------------------
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADER----------
+\begin{center}
+    {\Huge\bfseries\color{primaryblue} Anshu} \\ \vspace{6pt}
+    \small
+    \color{charcoal}
+    \faMapMarkerAlt\ Rohtak, Haryana \hspace{10pt}
+    \faPhone*\ +91 8199820779 \hspace{10pt}
+    \faEnvelope\ \href{mailto:anshuh027@gmail.com}{\color{charcoal}{anshuh027@gmail.com}} \\ \vspace{4pt}
+    \faLinkedin\ \href{https://linkedin.com/in/anshu-hooda-289524282}{\color{charcoal}{linkedin.com/in/anshu-hooda-289524282}} \hspace{10pt}
+    \faGlobe\ \href{https://anshuhooda.netlify.app}{\color{charcoal}{anshuhooda.netlify.app}} \hspace{10pt}
+    \faGithub\ \href{https://github.com/AnshuHOD}{\color{charcoal}{github.com/AnshuHOD}}
+\end{center}
+
+
+%-----------PROFESSIONAL SUMMARY-----------
+\resumeSection{\faUser}{Professional Summary}
+\small{AI Automation Engineer specializing in architecting intelligent systems and autonomous agents to solve complex business challenges. Expert in designing end-to-end workflows and voice-first applications with a focus on seamless data integration. Committed to driving operational efficiency through innovative AI solutions.}
+
+
+%-----------WORK EXPERIENCE-----------
+\resumeSection{\faBriefcase}{Work Experience}
+
+\noindent
+\textbf{IIITDM Kurnool} $|$ Research Intern (IKS Project) \hfill \textbf{May 2026 -- Present}
+\begin{itemize}
+    \item Appointed as a Research Intern for the MoE-sponsored IKS project entitled ``Nyaya Shaastra for Computer Science Engineers,'' collaborating with a team of 4 researchers.
+    \item Formulated logic mappings on the intersection of ancient Indian logic and modern computing under the SRIC department, preparing 2 major reports.
+    \item Achieved 100\% of technical project milestones through systematic reviews and collaborative research logic flows.
+\end{itemize}
+
+\vspace{6pt}
+\noindent
+\textbf{Avani Enterprises} $|$ AI Automation Intern \hfill \textbf{Jan 2026 -- Apr 2026}
+\begin{itemize}
+    \item Deployed complex workflows for repetitive business processes, achieving a measurable 18\% reduction in operational latency.
+    \item Implemented automation solutions using Webhooks and HTTP Requests that reduced manual data entry by 22\% (saving 10+ hours weekly).
+    \item Designed and tested 3 autonomous decision-making tools to process real-time inputs, increasing operational accuracy by 15\%.
+\end{itemize}
+
+\vspace{6pt}
+\noindent
+\textbf{Branding Pioneers} $|$ AI Intern \hfill \textbf{Jul 2025 -- Sep 2025}
+\begin{itemize}
+    \item Produced 10+ custom automation pipelines using n8n and Make, enhancing campaign execution speed by 25\%.
+    \item Orchestrated WhatsApp API integration via Wbiztool to automate client communication, increasing customer engagement by 30\%.
+    \item Utilized Google Apps Script and Telegram Bots to streamline data workflows, reducing manual entry errors by 99\%.
+\end{itemize}
+
+
+%-----------TECHNICAL PROJECTS-----------
+\resumeSection{\faCode}{Technical Projects}
+
+\noindent
+\href{https://hoodas-bakery.vercel.app}{\color{primaryblue}\textbf{Hooda's Bakery -- AI-Powered Order Automation \& CRM}} $|$ \textit{React, Node.js, MongoDB, Gemini API, Razorpay}
+\begin{itemize}
+    \item Architected a full-stack e-commerce system featuring a multilingual Google Gemini AI chatbot (BakeBot) for conversational order placement, complete with a 40-message context-retention memory and Hinglish/Punjabi support.
+    \item Implemented a regex-based address parser on frontend checkout to automatically extract street names, cities, and pincodes from unstructured user chat messages, improving order accuracy.
+    \item Incorporated Razorpay payment gateway (sandbox) and Nodemailer (Gmail SMTP) for automated secure checkouts, status updates, and digital HTML invoice dispatches upon successful validation.
+    \item Built a secure React admin dashboard featuring JWT authentication to manage live orders, visualize incoming CRM leads (categorized by landing page vs. WhatsApp funnels), and track customer feedback.
+\end{itemize}
+
+\vspace{6pt}
+\noindent
+\textbf{Healthcare Management Automation} $|$ \textit{n8n, Supabase, Python}
+\begin{itemize}
+    \item Architected a digital hospital system to manage check-ins, eliminating 100\% of physical paperwork.
+    \item Synchronized n8n workflow integrations with Supabase for real-time secure patient data storage.
+    \item Wrote custom Python scripts to generate unique patient IDs and optimized overall patient registration speed by 40\%.
+\end{itemize}
+
+\vspace{6pt}
+\noindent
+\textbf{Autonomous Local Business Intelligence Bot} $|$ \textit{n8n, Google Maps API, Google Sheets}
+\begin{itemize}
+    \item Developed a zero-human-intervention pipeline to extract lead data (emails, contact info, ratings) based on location and category.
+    \item Engineered an automated scraping engine that dumps validated leads directly into a centralized CRM spreadsheet.
+    \item Optimized lead generation for sales teams, eliminating hours of manual research and enabling multi-city extraction.
+\end{itemize}
+
+\vspace{6pt}
+\noindent
+\textbf{AI Voice Assistant for Customer Support} $|$ \textit{Millis.ai, Plivo, Python}
+\begin{itemize}
+    \item Engineered a voice assistant managing 50+ calls daily, contributing to a 15\% reduction in handling time.
+    \item Crafted 50+ conversational prompts to ensure natural interactions and accurate handling of inquiries.
+    \item Configured telephony pipelines with real-time response generation, bridging voice-first interfaces with backend databases.
+\end{itemize}
+
+
+%-----------EDUCATION-----------
+\resumeSection{\faGraduationCap}{Education}
+
+\noindent
+\textbf{UIET (M.D.U)} $|$ B.Tech in Artificial Intelligence \& Machine Learning (AIML) \hfill \textbf{2022 -- 2026}
+\begin{itemize}
+    \item Maintaining an 8.4 CGPA with a focus on machine learning and data structures.
+\end{itemize}
+
+% Force a clean page break here to prevent splitting the 12th class entry across page 1 and page 2
+\newpage
+
+\noindent
+\textbf{Jawahar Navodaya Vidyalaya (JNV)} $|$ Class XII (CBSE) \hfill \textbf{2021}
+\begin{itemize}
+    \item Secured 91.4\% in Senior Secondary Examination.
+    \item Served as School Captain; led a student body of 450+, coordinating events and representing at district-level forums.
+\end{itemize}
+
+
+%-----------SKILLS-----------
+\resumeSection{\faTools}{Skills}
+\begin{itemize}[label={}]
+    \small
+    \item \textbf{Hard Skills}: AI Automation, Machine Learning, NLP, Python, Node.js, Express.js, React.js, Webhooks, RAG, JSON, LLMs (Gemini, Claude, GPT), NumPy, Pandas, REST APIs, Prompting
+    \item \textbf{Software \& Tools}: n8n, Make, Albato, MongoDB, Supabase, Razorpay API, Vapi, Millis.ai, Retell, Wbiztool, LangChain, GitHub, Git
+    \item \textbf{Soft Skills}: Project Management, Team Collaboration, Process Optimization, Client Communication
+\end{itemize}
+
+
+%-----------ACHIEVEMENTS-----------
+\resumeSection{\faTrophy}{Achievements}
+\begin{itemize}
+    \item \textbf{Hackathon Recognition}: Secured 4th Place in a competitive hackathon organized by GeekHub.
+    \item \textbf{Microsoft Selection}: Selected via MLSA evaluation for a technical interaction event.
+\end{itemize}
+
+%-------------------------------------------
+\end{document}
+```

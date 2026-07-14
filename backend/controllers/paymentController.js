@@ -10,6 +10,7 @@
 const crypto = require('crypto');
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
+const Lead = require('../models/Lead');
 const { sendOrderConfirmationEmail, sendAdminNotificationEmail } = require('../services/emailService');
 const { generateInvoice } = require('../services/invoiceService');
 
@@ -43,6 +44,13 @@ const verifyPayment = async (req, res) => {
     order.payment.status = 'paid';
     order.payment.paidAt = new Date();
     await order.save();
+
+    // Update Lead CRM status to 'order_placed'
+    const lead = await Lead.findOne({ convertedOrderId: order._id });
+    if (lead) {
+      lead.status = 'order_placed';
+      await lead.save();
+    }
 
     // Step 3: Customer stats update
     await Customer.findByIdAndUpdate(order.customer._id, {
