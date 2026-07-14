@@ -15,7 +15,7 @@ const sendOrderConfirmationEmail = async (order, invoicePath) => {
     .join('');
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: order.customer.email,
     subject: `🎂 Order Confirmed! ${order.orderId} — Hooda's Bakery`,
     html: `
@@ -57,7 +57,7 @@ const sendOrderConfirmationEmail = async (order, invoicePath) => {
 // Admin ko naya order alert
 const sendAdminNotificationEmail = async (order) => {
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: process.env.EMAIL_USER, // admin khud
     subject: `🆕 New Order Received: ${order.orderId} — ₹${order.total}`,
     html: `
@@ -78,7 +78,7 @@ const sendAdminNotificationEmail = async (order) => {
 const sendFeedbackRequestEmail = async (order) => {
   const feedbackUrl = `${process.env.FRONTEND_URL}/feedback.html?orderId=${order._id}`;
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: order.customer.email,
     subject: `How was your order from Hooda's Bakery? 🌟 — ${order.orderId}`,
     html: `
@@ -105,7 +105,7 @@ const sendFeedbackRequestEmail = async (order) => {
 // Payment fail hone par
 const sendPaymentFailedEmail = async (customerEmail, customerName, orderId) => {
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: customerEmail,
     subject: `Payment Issue — Order ${orderId}`,
     html: `

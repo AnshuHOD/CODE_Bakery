@@ -75,7 +75,7 @@ const verifyPayment = async (req, res) => {
         // Step 6: Admin ko notification
         await sendAdminNotificationEmail(order);
       } catch (bgErr) {
-        console.error('Background order post-processing error:', bgErr.message);
+        console.error('Background order post-processing error:', bgErr);
       }
     })();
   } catch (err) {

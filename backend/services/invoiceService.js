@@ -21,34 +21,56 @@ const generateInvoice = (order) => {
     const writeStream = fs.createWriteStream(filePath);
     doc.pipe(writeStream);
 
-    // --- Premium Brand Banner ---
-    doc.rect(0, 0, 595, 80).fill('#3E2723');
-    doc.fillColor('#FFFFFF').fontSize(24).font('Helvetica-Bold').text("Hooda's Bakery", 50, 20);
-    doc.fontSize(9).fillColor('#EFEBE9').font('Helvetica-Oblique').text('Delivering Happiness, One Slice at a Time 🎂', 50, 52);
+    // --- Header Section ---
+    // Left: Brand Details
+    doc.fillColor('#3D2620').fontSize(26).font('Helvetica-Bold').text("Hooda's Bakery", 50, 50);
+    doc.fillColor('#D97B66').fontSize(9).font('Helvetica-Oblique').text('Delivering Happiness, One Slice at a Time 🎂', 50, 80);
     
-    doc.fillColor('#FFFFFF').fontSize(20).font('Helvetica-Bold').text('INVOICE', 300, 26, { width: 245, align: 'right' });
+    doc.fillColor('#4A3530').fontSize(8.5).font('Helvetica')
+      .text('Near MDU Main Gate, Rohtak, Haryana - 124001', 50, 98)
+      .text('Phone: +91 8168567308 | Email: order@hoodasbakery.com', 50, 110)
+      .text('Website: www.hoodasbakery.com', 50, 122);
+    
+    // Right: Bakery Exterior Photo
+    const logoPath = path.join(__dirname, '../../frontend/customer/images/bakery_exterior.png');
+    if (fs.existsSync(logoPath)) {
+      try {
+        doc.image(logoPath, 380, 50, { width: 165, height: 95 });
+        doc.strokeColor('#3D2620').lineWidth(1.5).rect(380, 50, 165, 95).stroke();
+      } catch (imgErr) {
+        console.error("Failed to render logo in invoice PDF:", imgErr.message);
+      }
+    } else {
+      // Fallback empty decorative block
+      doc.fillColor('#FCEEEB').rect(380, 50, 165, 95).fill();
+      doc.strokeColor('#D97B66').lineWidth(1).rect(380, 50, 165, 95).stroke();
+      doc.fillColor('#D97B66').fontSize(12).font('Helvetica-Bold').text("Hooda's Bakery", 380, 85, { width: 165, align: 'center' });
+    }
+
+    // Divider Line
+    doc.strokeColor('#EFE7DE').lineWidth(1).moveTo(50, 160).lineTo(545, 160).stroke();
 
     // --- Side-by-Side Metadata Columns ---
     // Left column: Bill To
-    doc.fillColor('#3E2723').fontSize(11).font('Helvetica-Bold').text('BILL TO:', 50, 105);
-    doc.font('Helvetica').fillColor('#333').fontSize(9)
-      .text(order.customer.name, 50, 120, { width: 230 })
-      .text(order.customer.email, 50, 133, { width: 230 })
-      .text(order.customer.phone, 50, 146, { width: 230 });
+    doc.fillColor('#3D2620').fontSize(10).font('Helvetica-Bold').text('BILL TO:', 50, 175);
+    doc.font('Helvetica').fillColor('#4A3530').fontSize(9)
+      .text(order.customer.name, 50, 190, { width: 230 })
+      .text(order.customer.email, 50, 203, { width: 230 })
+      .text(order.customer.phone, 50, 216, { width: 230 });
 
     // Right column: Delivery Details
-    doc.fillColor('#3E2723').fontSize(11).font('Helvetica-Bold').text('DELIVERY DETAILS:', 300, 105);
-    doc.font('Helvetica').fillColor('#333').fontSize(9)
-      .text(`Invoice No: ${order.orderId}`, 300, 120, { width: 245 })
-      .text(`Order Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 300, 133, { width: 245 })
-      .text(`Address: ${order.deliveryAddress.street}, ${order.deliveryAddress.city} - ${order.deliveryAddress.pincode}`, 300, 146, { width: 245 })
-      .text(`Delivery Date: ${new Date(order.deliveryDate).toLocaleDateString('en-IN', { dateStyle: 'long' })}`, 300, 172, { width: 245 });
+    doc.fillColor('#3D2620').fontSize(10).font('Helvetica-Bold').text('ORDER DETAILS:', 300, 175);
+    doc.font('Helvetica').fillColor('#4A3530').fontSize(9)
+      .text(`Invoice No: ${order.orderId}`, 300, 190, { width: 245 })
+      .text(`Order Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 300, 203, { width: 245 })
+      .text(`Address: ${order.deliveryAddress.street}, ${order.deliveryAddress.city} - ${order.deliveryAddress.pincode}`, 300, 216, { width: 245 })
+      .text(`Delivery Date: ${new Date(order.deliveryDate).toLocaleDateString('en-IN', { dateStyle: 'long' })}`, 300, 242, { width: 245 });
 
     // --- Items Table ---
-    const tableTop = 210;
+    const tableTop = 275;
 
     // Table header background
-    doc.fillColor('#3E2723').rect(50, tableTop, 495, 22).fill();
+    doc.fillColor('#3D2620').rect(50, tableTop, 495, 22).fill();
     doc.fillColor('white').fontSize(9).font('Helvetica-Bold')
       .text('Item Name', 55, tableTop + 6)
       .text('Flavour', 200, tableTop + 6)
@@ -59,18 +81,18 @@ const generateInvoice = (order) => {
     // Table rows
     let rowY = tableTop + 28;
     order.items.forEach((item, idx) => {
-      const bg = idx % 2 === 0 ? '#FDFBF7' : '#FFFFFF';
+      const bg = idx % 2 === 0 ? '#FAF6F0' : '#FFFFFF';
       doc.fillColor(bg).rect(50, rowY - 4, 495, 20).fill();
       
       // Draw subtle row separator
-      doc.strokeColor('#E0DCD5').lineWidth(0.5).moveTo(50, rowY + 16).lineTo(545, rowY + 16).stroke();
+      doc.strokeColor('#EFE7DE').lineWidth(0.5).moveTo(50, rowY + 16).lineTo(545, rowY + 16).stroke();
       
-      const isCake = item.product && item.product.category === 'cake';
+      const isCake = item.category === 'cake' || (item.product && item.product.category === 'cake');
       const qtyText = isCake ? `${item.sizeKg} kg` : `${item.sizeKg} pc`;
       const rateText = isCake ? `Rs. ${item.pricePerKg}/kg` : `Rs. ${item.pricePerKg}/pc`;
       const amountText = `Rs. ${item.subtotal}`;
 
-      doc.fillColor('#333').font('Helvetica').fontSize(9)
+      doc.fillColor('#4A3530').font('Helvetica').fontSize(9)
         .text(item.productName, 55, rowY, { width: 140, height: 15, ellipsis: true })
         .text(item.flavour || '-', 200, rowY, { width: 85, height: 15, ellipsis: true })
         .text(qtyText, 290, rowY)
@@ -81,26 +103,26 @@ const generateInvoice = (order) => {
 
     // Total Amount Box
     rowY += 10;
-    doc.fillColor('#FDFBF7').rect(350, rowY, 195, 30).fill();
-    doc.strokeColor('#3E2723').lineWidth(1).rect(350, rowY, 195, 30).stroke();
-    doc.fillColor('#3E2723').fontSize(11).font('Helvetica-Bold')
+    doc.fillColor('#FAF6F0').rect(350, rowY, 195, 30).fill();
+    doc.strokeColor('#3D2620').lineWidth(1).rect(350, rowY, 195, 30).stroke();
+    doc.fillColor('#3D2620').fontSize(11).font('Helvetica-Bold')
       .text('Total Amount:', 360, rowY + 9)
       .text(`Rs. ${order.total}`, 465, rowY + 9);
     rowY += 45;
 
     // Payment Block
-    doc.fillColor('#E1F5EE').rect(50, rowY, 495, 45).fill();
-    doc.strokeColor('#2ECC71').lineWidth(0.5).rect(50, rowY, 495, 45).stroke();
-    doc.fillColor('#0F6E56').fontSize(10).font('Helvetica-Bold')
+    doc.fillColor('#FCEEEB').rect(50, rowY, 495, 45).fill();
+    doc.strokeColor('#D97B66').lineWidth(0.5).rect(50, rowY, 495, 45).stroke();
+    doc.fillColor('#D97B66').fontSize(10).font('Helvetica-Bold')
       .text(`✅ Payment Status: PAID`, 60, rowY + 8);
-    doc.font('Helvetica').fontSize(8.5).fillColor('#555')
+    doc.font('Helvetica').fontSize(8.5).fillColor('#4A3530')
       .text(`Transaction Reference: ${order.payment.razorpayPaymentId} | Paid on: ${new Date(order.payment.paidAt).toLocaleString('en-IN')}`, 60, rowY + 24);
 
     // Special Instructions
     if (order.specialInstructions) {
       rowY += 60;
-      doc.fillColor('#3E2723').font('Helvetica-Bold').fontSize(10).text('Special Instructions:', 50, rowY);
-      doc.font('Helvetica').fillColor('#555').fontSize(9).text(order.specialInstructions, 50, rowY + 15, { width: 495 });
+      doc.fillColor('#3D2620').font('Helvetica-Bold').fontSize(10).text('Special Instructions:', 50, rowY);
+      doc.font('Helvetica').fillColor('#4A3530').fontSize(9).text(order.specialInstructions, 50, rowY + 15, { width: 495 });
     }
 
     // Centered Footer
