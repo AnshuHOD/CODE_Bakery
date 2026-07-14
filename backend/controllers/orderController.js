@@ -20,9 +20,15 @@ const placeOrder = async (req, res) => {
     const { name, email, phone, address, items, deliveryDate, specialInstructions } = req.body;
 
     // Step 1: Customer find karo ya pehli baar ho toh create karo
-    let customer = await Customer.findOne({ email });
+    let customer = await Customer.findOne({ email: email.toLowerCase().trim() });
     if (!customer) {
       customer = await Customer.create({ name, email, phone, address });
+    } else {
+      // Update existing customer record with the latest checkout details
+      customer.name = name;
+      customer.phone = phone;
+      customer.address = address;
+      await customer.save();
     }
 
     // Step 2: Total calculate karo and validate limits

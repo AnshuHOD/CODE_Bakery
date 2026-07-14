@@ -58,18 +58,26 @@ const verifyPayment = async (req, res) => {
       lastOrderDate: new Date(),
     });
 
-    // Step 4: PDF Invoice generate karo
-    const invoicePath = await generateInvoice(order);
-
-    // Step 5: Customer ko confirmation + invoice email
-    await sendOrderConfirmationEmail(order, invoicePath);
-    order.invoiceSent = true;
-    await order.save();
-
-    // Step 6: Admin ko notification
-    await sendAdminNotificationEmail(order);
-
+    // Send response immediately to avoid connection timeout in browser
     res.json({ success: true, message: 'Payment verified, order confirmed!', orderId: order.orderId });
+
+    // Run PDF invoice generation and emailing asynchronously in the background
+    (async () => {
+      try {
+        // Step 4: PDF Invoice generate karo
+        const invoicePath = await generateInvoice(order);
+
+        // Step 5: Customer ko confirmation + invoice email
+        await sendOrderConfirmationEmail(order, invoicePath);
+        order.invoiceSent = true;
+        await order.save();
+
+        // Step 6: Admin ko notification
+        await sendAdminNotificationEmail(order);
+      } catch (bgErr) {
+        console.error('Background order post-processing error:', bgErr.message);
+      }
+    })();
   } catch (err) {
     console.error('Payment verification error:', err);
     res.status(500).json({ success: false, message: err.message });

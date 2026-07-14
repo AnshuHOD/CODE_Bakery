@@ -28,6 +28,36 @@ const initialProducts = [
     tags: ['bestseller', 'cream-cheese', 'anniversary']
   },
   {
+    name: 'Classic Vanilla Sponge',
+    description: 'Fluffy vanilla sponge cake layered with sweet whipped cream and traditional vanilla cream frosting.',
+    category: 'cake',
+    pricePerKg: 750,
+    minSizeKg: 0.5,
+    available: true,
+    imageUrl: 'images/cakes/vanilla_round.png',
+    tags: ['classic', 'vanilla', 'eggless']
+  },
+  {
+    name: 'Fresh Tropical Pineapple',
+    description: 'Juicy pineapple chunks layered inside a moist vanilla sponge with fresh whipped cream and cherry toppings.',
+    category: 'cake',
+    pricePerKg: 800,
+    minSizeKg: 0.5,
+    available: true,
+    imageUrl: 'images/cakes/pineapple_round.png',
+    tags: ['pineapple', 'fruit', 'fresh']
+  },
+  {
+    name: 'Sweet Wild Strawberry',
+    description: 'Fresh wild strawberry compote layers with strawberry cream frosting on a soft pink sponge.',
+    category: 'cake',
+    pricePerKg: 850,
+    minSizeKg: 0.5,
+    available: true,
+    imageUrl: 'images/cakes/strawberry_round.png',
+    tags: ['strawberry', 'fruit', 'sweet']
+  },
+  {
     name: 'Blueberry Pastry',
     description: 'Light and airy vanilla cake base layers filled with sweetened whipping cream and tangy blueberry compote.',
     category: 'pastry',

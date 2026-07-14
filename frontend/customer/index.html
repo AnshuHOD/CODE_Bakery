@@ -384,6 +384,32 @@
     </div>
   </section>
 
+  <!-- Floating Cart Button -->
+  <div class="floating-cart-btn" id="floatingCartBtn" onclick="toggleCartDrawer(true)" style="display: none;">
+    🛒 <span id="cartCount">0</span>
+  </div>
+
+  <!-- Cart Drawer Overlay -->
+  <div class="cart-drawer-overlay" id="cartOverlay" onclick="toggleCartDrawer(false)"></div>
+
+  <!-- Cart Drawer -->
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-header">
+      <h3>🛒 Shopping Cart</h3>
+      <button class="close-cart-btn" onclick="toggleCartDrawer(false)">✕</button>
+    </div>
+    <div class="cart-items-list" id="cartItemsList">
+      <!-- Items will be populated here -->
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total-row">
+        <span>Total:</span>
+        <span id="cartTotalVal">₹0.00</span>
+      </div>
+      <button class="checkout-btn" onclick="proceedToCheckout()">Checkout / Order Now →</button>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="footer">
     <p>© 2026 Hooda's Bakery · Delivering Smiles, One Slice at a Time 🎂</p>
@@ -924,7 +950,7 @@
                   <p>${p.description || "Freshly baked using high-quality organic ingredients."}</p>
                   <div class="bestseller-footer">
                     <span class="price">₹${p.pricePerKg} <span class="unit">/ ${unit}</span></span>
-                    <a href="order.html?item=${p._id}" class="btn-order">Order Now</a>
+                    <button onclick="addToCart('${p._id}')" class="btn-order" style="border:none; cursor:pointer;">Add to Cart</button>
                   </div>
                 </div>
               </div>
@@ -938,9 +964,146 @@
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    // Cart System JS Logic (Global Homepage Cart)
+    let allProducts = [];
+    let cart = JSON.parse(localStorage.getItem('bakery_cart') || '[]');
+
+    async function loadAllProducts() {
+      try {
+        const res = await fetch(`${CONFIG.API_BASE}/products?available=true`);
+        const data = await res.json();
+        allProducts = data.data;
+      } catch (err) {
+        console.error("Failed to load products for cart", err);
+      }
+    }
+
+    function saveCart() {
+      localStorage.setItem('bakery_cart', JSON.stringify(cart));
+      renderCart();
+    }
+
+    function toggleCartDrawer(show) {
+      const drawer = document.getElementById('cartDrawer');
+      const overlay = document.getElementById('cartOverlay');
+      if (show) {
+        drawer.classList.add('open');
+        overlay.classList.add('open');
+      } else {
+        drawer.classList.remove('open');
+        overlay.classList.remove('open');
+      }
+    }
+
+    function addToCart(productId) {
+      const p = allProducts.find(item => item._id === productId);
+      if (!p) return;
+
+      const isCake = p.category === 'cake';
+      const defaultQty = isCake ? (p.minSizeKg || 0.5) : (p.minSizeKg || 1);
+
+      const existing = cart.find(item => item.productId === productId);
+      if (existing) {
+        existing.qty += isCake ? 0.5 : 1;
+        const maxLimit = isCake ? 20 : 100;
+        if (existing.qty > maxLimit) existing.qty = maxLimit;
+      } else {
+        cart.push({
+          productId: p._id,
+          name: p.name,
+          price: p.pricePerKg,
+          category: p.category,
+          imageUrl: p.imageUrl,
+          qty: defaultQty,
+          minQty: defaultQty
+        });
+      }
+      saveCart();
+      toggleCartDrawer(true);
+    }
+
+    function updateCartQty(productId, amount) {
+      const item = cart.find(i => i.productId === productId);
+      if (!item) return;
+
+      const isCake = item.category === 'cake';
+      item.qty += isCake ? (amount * 0.5) : amount;
+      
+      const maxLimit = isCake ? 20 : 100;
+      if (item.qty > maxLimit) item.qty = maxLimit;
+
+      if (item.qty < item.minQty) {
+        removeFromCart(productId);
+      } else {
+        saveCart();
+      }
+    }
+
+    function removeFromCart(productId) {
+      cart = cart.filter(i => i.productId !== productId);
+      saveCart();
+    }
+
+    function renderCart() {
+      const list = document.getElementById('cartItemsList');
+      const countBtn = document.getElementById('floatingCartBtn');
+      const countVal = document.getElementById('cartCount');
+      const totalVal = document.getElementById('cartTotalVal');
+
+      if (cart.length > 0) {
+        countBtn.style.display = 'flex';
+        const totalItemsCount = cart.reduce((sum, item) => sum + (item.category === 'cake' ? 1 : item.qty), 0);
+        countVal.innerText = Math.round(totalItemsCount);
+      } else {
+        countBtn.style.display = 'none';
+        toggleCartDrawer(false);
+      }
+
+      let total = 0;
+      if (cart.length === 0) {
+        list.innerHTML = '<p class="empty-cart-msg">Your cart is empty. Add delicious treats from the menu!</p>';
+        totalVal.innerText = '₹0.00';
+        return;
+      }
+
+      list.innerHTML = cart.map(item => {
+        const unit = item.category === 'cake' ? 'kg' : 'pc';
+        const subtotal = item.qty * item.price;
+        total += subtotal;
+
+        return `
+          <div class="cart-item">
+            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}"/>` : '<div class="cart-item-placeholder">🎂</div>'}
+            <div class="cart-item-details">
+              <h4>${item.name}</h4>
+              <span class="price">₹${item.price}/${unit}</span>
+              <div class="cart-item-controls">
+                <button type="button" class="cart-qty-btn" onclick="updateCartQty('${item.productId}', -1)">−</button>
+                <span class="cart-qty-val">${item.qty.toFixed(item.category === 'cake' ? 1 : 0)} ${unit}</span>
+                <button type="button" class="cart-qty-btn" onclick="updateCartQty('${item.productId}', 1)">+</button>
+              </div>
+            </div>
+            <button type="button" class="remove-cart-item" onclick="removeFromCart('${item.productId}')">✕</button>
+          </div>
+        `;
+      }).join('');
+
+      totalVal.innerText = `₹${total.toFixed(2)}`;
+    }
+
+    function proceedToCheckout() {
+      if (cart.length === 0) {
+        alert("Please add items to your cart first!");
+        return;
+      }
+      window.location.href = `order.html?cart=true`;
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
       updateAuthNavbar();
+      await loadAllProducts();
       loadRecommendations();
+      renderCart();
       if (new URLSearchParams(window.location.search).get('login') === 'true') {
         openLoginModal();
       }
