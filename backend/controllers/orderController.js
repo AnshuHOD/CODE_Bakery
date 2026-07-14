@@ -99,6 +99,17 @@ const placeOrder = async (req, res) => {
     lead.convertedOrderId = order._id;
     await lead.save();
 
+    // Send lead emails asynchronously in the background to avoid any delay
+    (async () => {
+      try {
+        const { sendManualCheckoutLeadAdminEmail, sendManualCheckoutLeadCustomerEmail } = require('../services/emailService');
+        await sendManualCheckoutLeadAdminEmail(lead, order);
+        await sendManualCheckoutLeadCustomerEmail(lead, order);
+      } catch (emailErr) {
+        console.error('Failed to send checkout lead emails:', emailErr.message);
+      }
+    })();
+
     // Step 6: Razorpay order create karo
     // Amount paise mein hota hai (INR × 100)
     const razorpayOrder = await razorpay.orders.create({

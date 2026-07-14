@@ -248,6 +248,86 @@ const sendWhatsAppLeadAdminEmail = async (lead) => {
   }
 };
 
+const sendManualCheckoutLeadAdminEmail = async (lead, order) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.log(`[SIMULATED EMAIL TO ADMIN] Subject: New Website Lead: ${lead.name}`);
+    return;
+  }
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: `🆕 New Website Lead Alert: ${lead.name} — Hooda's Bakery`,
+      html: `
+        <h2>New Website Checkout Lead!</h2>
+        <p>A customer has initiated a checkout on the website. Here are their details:</p>
+        <div style="background: #F5EBE6; padding: 16px; border-radius: 8px; border: 1px solid #D97766;">
+          <p><strong>Customer Name:</strong> ${lead.name}</p>
+          <p><strong>Phone Number:</strong> ${lead.phone}</p>
+          <p><strong>Email Address:</strong> ${lead.email}</p>
+          <p><strong>Order Items:</strong> ${lead.interestedIn}</p>
+          <p><strong>Delivery Address:</strong> ${lead.address || "Not provided"}</p>
+          <p><strong>Payment Status:</strong> Pending</p>
+        </div>
+        <p><a href="${process.env.ADMIN_URL || 'https://hoodas-bakery-admin.vercel.app'}/leads" style="display:inline-block; background:#3E2723; color:white; padding:10px 20px; border-radius:4px; text-decoration:none;">View in CRM / Admin Panel →</a></p>
+      `
+    });
+    console.log(`✅ Website Lead email sent to Admin`);
+  } catch (err) {
+    console.error("❌ Failed to send website lead email to admin:", err.message);
+  }
+};
+
+const sendManualCheckoutLeadCustomerEmail = async (lead, order) => {
+  const nameParam = encodeURIComponent(lead.name || 'Valued Customer');
+  const emailParam = encodeURIComponent(lead.email || '');
+  const phoneParam = encodeURIComponent(lead.phone || '');
+  const addressParam = encodeURIComponent(lead.address || '');
+  const itemsParam = encodeURIComponent(lead.interestedIn || '');
+
+  const baseUrl = process.env.FRONTEND_URL || 'https://hoodas-bakery.vercel.app';
+  const paymentUrl = `${baseUrl}/order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}&address=${addressParam}&items=${itemsParam}`;
+
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.log(`[SIMULATED EMAIL TO CUSTOMER] Subject: Website Lead Received`);
+    return;
+  }
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: lead.email,
+      subject: `🎂 Order Inquiry Received! — Hooda's Bakery`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+          <div style="background: #3E2723; padding: 24px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Hooda's Bakery 🎂</h1>
+            <p style="color: #E1F5EE; margin: 4px 0;">We received your order inquiry!</p>
+          </div>
+          <div style="padding: 24px;">
+            <p>Hi <strong>${lead.name}</strong>,</p>
+            <p>Thank you for choosing Hooda's Bakery! We have received your order checkout inquiry. Here is the summary of your selected items:</p>
+            
+            <h3 style="color: #3E2723; border-bottom: 1px solid #eee; padding-bottom: 6px;">Your Order Summary:</h3>
+            <p><strong>Order Items:</strong> ${lead.interestedIn}</p>
+            <p><strong>Delivery Address:</strong> ${lead.address || "Not provided"}</p>
+            
+            <div style="background: #FAF6F0; padding: 20px; border-radius: 12px; border: 1px solid #EFE7DE; text-align: center; margin: 24px 0;">
+              <p style="margin-top: 0; font-weight: bold; color: #3E2723;">To complete your order and process the payment, click the button below:</p>
+              <a href="${paymentUrl}" style="display: inline-block; background: #D97B66; color: white; padding: 12px 28px; border-radius: 50px; text-decoration: none; font-weight: bold; font-family: sans-serif; box-shadow: 0 4px 15px rgba(217,123,102,0.3); margin-top: 10px;">Complete Payment & Confirm Order →</a>
+            </div>
+            
+            <p>We are excited to bake for you!</p>
+            <p>With love,<br><strong>Hooda's Bakery Team</strong> 🎂</p>
+          </div>
+        </div>
+      `
+    });
+    console.log(`✅ Website Lead email sent to Customer: ${lead.email}`);
+  } catch (err) {
+    console.error("❌ Failed to send website lead email to customer:", err.message);
+  }
+};
+
 module.exports = {
   sendOrderConfirmationEmail,
   sendAdminNotificationEmail,
@@ -255,5 +335,7 @@ module.exports = {
   sendPaymentFailedEmail,
   sendChatbotLeadAdminEmail,
   sendChatbotLeadCustomerEmail,
-  sendWhatsAppLeadAdminEmail
+  sendWhatsAppLeadAdminEmail,
+  sendManualCheckoutLeadAdminEmail,
+  sendManualCheckoutLeadCustomerEmail
 };
