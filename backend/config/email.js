@@ -4,18 +4,27 @@
 
 const nodemailer = require('nodemailer');
 
+const emailUser = process.env.EMAIL_USER || 'anshuh027@gmail.com';
+const rawPass = process.env.EMAIL_PASS || 'tkublahmfelgcsyf';
+const emailPass = rawPass.replace(/\s+/g, '');
+
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : '',
+    user: emailUser,
+    pass: emailPass,
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
-// Verify karo ki setup sahi hai (server start pe)
+// Verify setup on server start
 transporter.verify((error) => {
   if (error) console.error('❌ Email setup error:', error.message);
-  else console.log('✅ Email service ready');
+  else console.log(`✅ Email service ready (${emailUser} via smtp.gmail.com:465)`);
 });
 
 module.exports = transporter;

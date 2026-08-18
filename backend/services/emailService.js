@@ -8,70 +8,88 @@
 const transporter = require('../config/email');
 const fs = require('fs');
 
+const getAdminEmail = () => process.env.EMAIL_USER || 'anshuh027@gmail.com';
+const getDefaultFrom = () => process.env.EMAIL_FROM || `Hooda's Bakery <${getAdminEmail()}>`;
+
 // Customer ko order confirmation + PDF invoice
 const sendOrderConfirmationEmail = async (order, invoicePath) => {
+  if (!order.customer || !order.customer.email) {
+    console.error("❌ Cannot send order confirmation email: Customer email is missing.");
+    return;
+  }
+
   const itemsList = order.items
     .map(i => `<li>${i.productName} - ${i.sizeKg}kg @ ₹${i.pricePerKg}/kg = <strong>₹${i.subtotal}</strong></li>`)
     .join('');
 
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-    to: order.customer.email,
-    subject: `🎂 Order Confirmed! ${order.orderId} — Hooda's Bakery`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-        <div style="background: #1B2A4A; padding: 24px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Hooda's Bakery 🎂</h1>
-          <p style="color: #E1F5EE; margin: 4px 0;">Your order is confirmed!</p>
-        </div>
-        <div style="padding: 24px;">
-          <p>Hi <strong>${order.customer.name}</strong>,</p>
-          <p>Thank you for your order! We're excited to bake for you. Here are your order details:</p>
-          
-          <div style="background: #F1EFE8; padding: 16px; border-radius: 6px; margin: 16px 0;">
-            <p><strong>Order ID:</strong> ${order.orderId}</p>
-            <p><strong>Delivery Date:</strong> ${new Date(order.deliveryDate).toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
-            <p><strong>Delivery Address:</strong> ${order.deliveryAddress.street}, ${order.deliveryAddress.city}</p>
+  try {
+    await transporter.sendMail({
+      from: getDefaultFrom(),
+      to: order.customer.email,
+      subject: `🎂 Order Confirmed! ${order.orderId} — Hooda's Bakery`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+          <div style="background: #1B2A4A; padding: 24px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Hooda's Bakery 🎂</h1>
+            <p style="color: #E1F5EE; margin: 4px 0;">Your order is confirmed!</p>
           </div>
+          <div style="padding: 24px;">
+            <p>Hi <strong>${order.customer.name || 'Valued Customer'}</strong>,</p>
+            <p>Thank you for your order! We're excited to bake for you. Here are your order details:</p>
+            
+            <div style="background: #F1EFE8; padding: 16px; border-radius: 6px; margin: 16px 0;">
+              <p><strong>Order ID:</strong> ${order.orderId}</p>
+              <p><strong>Delivery Date:</strong> ${new Date(order.deliveryDate).toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
+              <p><strong>Delivery Address:</strong> ${order.deliveryAddress ? `${order.deliveryAddress.street}, ${order.deliveryAddress.city}` : 'Specified on checkout'}</p>
+            </div>
 
-          <h3 style="color: #1B2A4A;">Order Items:</h3>
-          <ul>${itemsList}</ul>
-          <p style="font-size: 18px; color: #0F6E56;"><strong>Total Paid: ₹${order.total}</strong></p>
+            <h3 style="color: #1B2A4A;">Order Items:</h3>
+            <ul>${itemsList}</ul>
+            <p style="font-size: 18px; color: #0F6E56;"><strong>Total Paid: ₹${order.total}</strong></p>
 
-          <p style="color: #888; font-size: 12px; margin-top: 24px;">Your invoice is attached to this email. If you have any questions, reply to this email.</p>
-          <p>With love,<br><strong>Hooda's Bakery Team</strong> 🎂</p>
+            <p style="color: #888; font-size: 12px; margin-top: 24px;">Your invoice is attached to this email. If you have any questions, reply to this email.</p>
+            <p>With love,<br><strong>Hooda's Bakery Team</strong> 🎂</p>
+          </div>
         </div>
-      </div>
-    `,
-    attachments: [
-      {
-        filename: `invoice-${order.orderId}.pdf`,
-        path: invoicePath,
-        contentType: 'application/pdf',
-      },
-    ],
-  });
-  console.log(`✅ Confirmation email sent to ${order.customer.email}`);
+      `,
+      attachments: invoicePath ? [
+        {
+          filename: `invoice-${order.orderId}.pdf`,
+          path: invoicePath,
+          contentType: 'application/pdf',
+        },
+      ] : [],
+    });
+    console.log(`✅ Confirmation email sent to ${order.customer.email}`);
+  } catch (err) {
+    console.error(`❌ Failed to send confirmation email:`, err.message);
+  }
 };
 
 // Admin ko naya order alert
 const sendAdminNotificationEmail = async (order) => {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-    to: process.env.EMAIL_USER, // admin khud
-    subject: `🆕 New Order Received: ${order.orderId} — ₹${order.total}`,
-    html: `
-      <h2>New Order Alert!</h2>
-      <p><strong>Order ID:</strong> ${order.orderId}</p>
-      <p><strong>Customer:</strong> ${order.customer.name} (${order.customer.email})</p>
-      <p><strong>Phone:</strong> ${order.customer.phone}</p>
-      <p><strong>Total:</strong> ₹${order.total}</p>
-      <p><strong>Delivery Date:</strong> ${new Date(order.deliveryDate).toLocaleDateString('en-IN')}</p>
-      <p><strong>Items:</strong> ${order.items.map(i => `${i.productName} ${i.sizeKg}kg`).join(', ')}</p>
-      ${order.specialInstructions ? `<p><strong>Special Instructions:</strong> ${order.specialInstructions}</p>` : ''}
-      <p><a href="${process.env.FRONTEND_URL}/admin/orders">View in Admin Panel →</a></p>
-    `,
-  });
+  try {
+    const adminMail = getAdminEmail();
+    await transporter.sendMail({
+      from: getDefaultFrom(),
+      to: adminMail,
+      subject: `🆕 New Order Received: ${order.orderId} — ₹${order.total}`,
+      html: `
+        <h2>New Order Alert!</h2>
+        <p><strong>Order ID:</strong> ${order.orderId}</p>
+        <p><strong>Customer:</strong> ${order.customer ? order.customer.name : 'Customer'} (${order.customer ? order.customer.email : 'N/A'})</p>
+        <p><strong>Phone:</strong> ${order.customer ? order.customer.phone : 'N/A'}</p>
+        <p><strong>Total:</strong> ₹${order.total}</p>
+        <p><strong>Delivery Date:</strong> ${new Date(order.deliveryDate).toLocaleDateString('en-IN')}</p>
+        <p><strong>Items:</strong> ${order.items ? order.items.map(i => `${i.productName} (${i.sizeKg}kg)`).join(', ') : ''}</p>
+        ${order.specialInstructions ? `<p><strong>Special Instructions:</strong> ${order.specialInstructions}</p>` : ''}
+        <p><a href="${process.env.ADMIN_URL || 'https://hoodas-bakery-admin.vercel.app'}/orders">View in Admin Panel →</a></p>
+      `,
+    });
+    console.log(`✅ Admin notification email sent to ${adminMail}`);
+  } catch (err) {
+    console.error(`❌ Failed to send admin notification email:`, err.message);
+  }
 };
 
 // Delivery ke baad feedback maangna
@@ -119,16 +137,10 @@ const sendPaymentFailedEmail = async (customerEmail, customerName, orderId) => {
 };
 
 const sendChatbotLeadAdminEmail = async (lead) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`[SIMULATED EMAIL TO ADMIN] Subject: New Chatbot Lead: ${lead.name}`);
-    console.log(`Details:`, JSON.stringify(lead, null, 2));
-    return;
-  }
-
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
+      from: DEFAULT_FROM,
+      to: ADMIN_EMAIL,
       subject: `🆕 New Chatbot Lead: ${lead.name} — Hooda's Bakery`,
       html: `
         <h2>New Chatbot Lead Alert!</h2>
@@ -141,16 +153,17 @@ const sendChatbotLeadAdminEmail = async (lead) => {
           <p><strong>Delivery/Pickup Address:</strong> ${lead.address || "Not provided"}</p>
           <p><strong>Preferred Time slot:</strong> ${lead.timeSlot || "Not provided"}</p>
         </div>
-        <p><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/leads" style="display:inline-block; background:#3E2723; color:white; padding:10px 20px; border-radius:4px; text-decoration:none;">View in CRM / Admin Panel →</a></p>
+        <p><a href="${process.env.ADMIN_URL || 'https://hoodas-bakery-admin.vercel.app'}/leads" style="display:inline-block; background:#3E2723; color:white; padding:10px 20px; border-radius:4px; text-decoration:none;">View in CRM / Admin Panel →</a></p>
       `
     });
-    console.log(`✅ Chatbot Lead email sent to Admin`);
+    console.log(`✅ Chatbot Lead email sent to Admin (${ADMIN_EMAIL})`);
   } catch (err) {
     console.error("❌ Failed to send chatbot lead email to admin:", err.message);
   }
 };
 
 const sendChatbotLeadCustomerEmail = async (lead) => {
+  if (!lead.email) return;
   const nameParam = encodeURIComponent(lead.name || 'Valued Customer');
   const emailParam = encodeURIComponent(lead.email || '');
   const phoneParam = encodeURIComponent(lead.phone || '');
@@ -158,19 +171,12 @@ const sendChatbotLeadCustomerEmail = async (lead) => {
   const timeSlotParam = encodeURIComponent(lead.timeSlot || '');
   const itemsParam = encodeURIComponent(lead.items || lead.interestedIn || '');
 
-  const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const baseUrl = process.env.FRONTEND_URL || 'https://hoodas-bakery.vercel.app';
   const paymentUrl = `${baseUrl}/order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}&address=${addressParam}&timeSlot=${timeSlotParam}&items=${itemsParam}`;
-
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`[SIMULATED EMAIL TO CUSTOMER] Subject: Order Request Received — Hooda's Bakery`);
-    console.log(`Payment Link: ${paymentUrl}`);
-    console.log(`Details:`, JSON.stringify(lead, null, 2));
-    return;
-  }
 
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: DEFAULT_FROM,
       to: lead.email,
       subject: `🎂 Order Request Received! — Hooda's Bakery`,
       html: `
@@ -180,7 +186,7 @@ const sendChatbotLeadCustomerEmail = async (lead) => {
             <p style="color: #E1F5EE; margin: 4px 0;">We received your booking details!</p>
           </div>
           <div style="padding: 24px;">
-            <p>Hi <strong>${lead.name}</strong>,</p>
+            <p>Hi <strong>${lead.name || 'Valued Customer'}</strong>,</p>
             <p>Thank you for choosing Hooda's Bakery! We have received your order request via website chat. Here are the details of your requested order:</p>
             
             <h3 style="color: #3E2723; border-bottom: 1px solid #eee; padding-bottom: 6px;">Your Booking Summary:</h3>
@@ -210,15 +216,10 @@ const sendChatbotLeadCustomerEmail = async (lead) => {
 };
 
 const sendWhatsAppLeadAdminEmail = async (lead) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`[SIMULATED EMAIL TO ADMIN] Subject: New WhatsApp Inquiry Lead: ${lead.phone}`);
-    return;
-  }
-
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
+      from: DEFAULT_FROM,
+      to: ADMIN_EMAIL,
       subject: `💬 WhatsApp Inquiry Lead Alert — Hooda's Bakery`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
@@ -236,27 +237,23 @@ const sendWhatsAppLeadAdminEmail = async (lead) => {
             </div>
             <p>Please log in to the admin dashboard to follow up on this lead.</p>
             <p style="text-align: center; margin-top: 30px;">
-              <a href="${process.env.ADMIN_URL || 'http://localhost:3001'}/leads" style="display: inline-block; background: #075E54; color: white; padding: 12px 24px; border-radius: 50px; text-decoration: none; font-weight: bold;">Open CRM / Lead Dashboard →</a>
+              <a href="${process.env.ADMIN_URL || 'https://hoodas-bakery-admin.vercel.app'}/leads" style="display: inline-block; background: #075E54; color: white; padding: 12px 24px; border-radius: 50px; text-decoration: none; font-weight: bold;">Open CRM / Lead Dashboard →</a>
             </p>
           </div>
         </div>
       `
     });
-    console.log(`✅ WhatsApp Lead email sent to Admin`);
+    console.log(`✅ WhatsApp Lead email sent to Admin (${ADMIN_EMAIL})`);
   } catch (err) {
     console.error("❌ Failed to send WhatsApp lead email to admin:", err.message);
   }
 };
 
 const sendManualCheckoutLeadAdminEmail = async (lead, order) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`[SIMULATED EMAIL TO ADMIN] Subject: New Website Lead: ${lead.name}`);
-    return;
-  }
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
+      from: DEFAULT_FROM,
+      to: ADMIN_EMAIL,
       subject: `🆕 New Website Lead Alert: ${lead.name} — Hooda's Bakery`,
       html: `
         <h2>New Website Checkout Lead!</h2>
@@ -272,13 +269,14 @@ const sendManualCheckoutLeadAdminEmail = async (lead, order) => {
         <p><a href="${process.env.ADMIN_URL || 'https://hoodas-bakery-admin.vercel.app'}/leads" style="display:inline-block; background:#3E2723; color:white; padding:10px 20px; border-radius:4px; text-decoration:none;">View in CRM / Admin Panel →</a></p>
       `
     });
-    console.log(`✅ Website Lead email sent to Admin`);
+    console.log(`✅ Website Lead email sent to Admin (${ADMIN_EMAIL})`);
   } catch (err) {
     console.error("❌ Failed to send website lead email to admin:", err.message);
   }
 };
 
 const sendManualCheckoutLeadCustomerEmail = async (lead, order) => {
+  if (!lead.email) return;
   const nameParam = encodeURIComponent(lead.name || 'Valued Customer');
   const emailParam = encodeURIComponent(lead.email || '');
   const phoneParam = encodeURIComponent(lead.phone || '');
@@ -288,13 +286,9 @@ const sendManualCheckoutLeadCustomerEmail = async (lead, order) => {
   const baseUrl = process.env.FRONTEND_URL || 'https://hoodas-bakery.vercel.app';
   const paymentUrl = `${baseUrl}/order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}&address=${addressParam}&items=${itemsParam}`;
 
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`[SIMULATED EMAIL TO CUSTOMER] Subject: Website Lead Received`);
-    return;
-  }
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: DEFAULT_FROM,
       to: lead.email,
       subject: `🎂 Order Inquiry Received! — Hooda's Bakery`,
       html: `
@@ -304,7 +298,7 @@ const sendManualCheckoutLeadCustomerEmail = async (lead, order) => {
             <p style="color: #E1F5EE; margin: 4px 0;">We received your order inquiry!</p>
           </div>
           <div style="padding: 24px;">
-            <p>Hi <strong>${lead.name}</strong>,</p>
+            <p>Hi <strong>${lead.name || 'Valued Customer'}</strong>,</p>
             <p>Thank you for choosing Hooda's Bakery! We have received your order checkout inquiry. Here is the summary of your selected items:</p>
             
             <h3 style="color: #3E2723; border-bottom: 1px solid #eee; padding-bottom: 6px;">Your Order Summary:</h3>
@@ -332,7 +326,7 @@ const sendWhatsAppLeadCustomerEmail = async (lead) => {
   if (!lead.email) return;
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: DEFAULT_FROM,
       to: lead.email,
       subject: `👋 Thanks for reaching out to Hooda's Bakery!`,
       html: `

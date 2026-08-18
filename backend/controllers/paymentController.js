@@ -78,15 +78,17 @@ const verifyPayment = async (req, res) => {
         } else {
           // If invoice was already sent during placeOrder, send a quick Payment Received update email to admin
           const transporter = require('../config/email');
+          const ADMIN_EMAIL = process.env.EMAIL_USER || 'anshuh027@gmail.com';
+          const DEFAULT_FROM = process.env.EMAIL_FROM || `Hooda's Bakery <${ADMIN_EMAIL}>`;
           await transporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to: process.env.EMAIL_USER,
+            from: DEFAULT_FROM,
+            to: ADMIN_EMAIL,
             subject: `💰 Payment Received Alert! Order: ${order.orderId} — ₹${order.total}`,
             html: `
               <h2>💰 Payment Received & Verified!</h2>
               <p><strong>Order ID:</strong> ${order.orderId}</p>
-              <p><strong>Customer:</strong> ${order.customer.name} (${order.customer.email})</p>
-              <p><strong>Phone:</strong> ${order.customer.phone}</p>
+              <p><strong>Customer:</strong> ${order.customer ? order.customer.name : 'Valued Customer'} (${order.customer ? order.customer.email : 'N/A'})</p>
+              <p><strong>Phone:</strong> ${order.customer ? order.customer.phone : 'N/A'}</p>
               <p><strong>Total Paid:</strong> ₹${order.total}</p>
               <p><strong>Razorpay Payment ID:</strong> ${razorpayPaymentId}</p>
               <p><strong>Status:</strong> Payment Confirmed & Paid</p>
