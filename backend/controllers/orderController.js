@@ -129,6 +129,9 @@ const placeOrder = async (req, res) => {
         } = require('../services/emailService');
         const { generateInvoice } = require('../services/invoiceService');
 
+        // Populate customer object so customer.email, customer.name, and customer.phone are available
+        await order.populate('customer');
+
         await sendManualCheckoutLeadAdminEmail(lead, order);
         await sendManualCheckoutLeadCustomerEmail(lead, order);
 
