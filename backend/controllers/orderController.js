@@ -59,10 +59,29 @@ const placeOrder = async (req, res) => {
         }
       }
 
-      const subtotal = item.sizeKg * product.pricePerKg;
+      // Check for shape addons in item.flavour
+      let shapeAddon = 0;
+      if (item.flavour) {
+        const normFlav = item.flavour.toLowerCase();
+        if (normFlav.includes('heart')) {
+          shapeAddon = 150;
+        } else if (normFlav.includes('square') || normFlav.includes('2tier') || normFlav.includes('custom')) {
+          shapeAddon = 100;
+        }
+      }
+
+      const baseSubtotal = item.sizeKg * product.pricePerKg;
+      const subtotal = baseSubtotal + shapeAddon;
       total += subtotal;
+
+      let displayName = product.name;
+      if (item.flavour) {
+        displayName += ` (${item.flavour})`;
+      }
+
       processedItems.push({
         ...item,
+        productName: displayName,
         pricePerKg: product.pricePerKg,
         subtotal
       });
@@ -99,14 +118,28 @@ const placeOrder = async (req, res) => {
     lead.convertedOrderId = order._id;
     await lead.save();
 
-    // Send lead emails asynchronously in the background to avoid any delay
+    // Send lead emails and detailed order confirmation + PDF invoice asynchronously
     (async () => {
       try {
-        const { sendManualCheckoutLeadAdminEmail, sendManualCheckoutLeadCustomerEmail } = require('../services/emailService');
+        const { 
+          sendManualCheckoutLeadAdminEmail, 
+          sendManualCheckoutLeadCustomerEmail,
+          sendOrderConfirmationEmail,
+          sendAdminNotificationEmail
+        } = require('../services/emailService');
+        const { generateInvoice } = require('../services/invoiceService');
+
         await sendManualCheckoutLeadAdminEmail(lead, order);
         await sendManualCheckoutLeadCustomerEmail(lead, order);
+
+        // Generate PDF Invoice immediately so customer & admin get detailed confirmation right away
+        const invoicePath = await generateInvoice(order);
+        await sendOrderConfirmationEmail(order, invoicePath);
+        await sendAdminNotificationEmail(order);
+        order.invoiceSent = true;
+        await order.save();
       } catch (emailErr) {
-        console.error('Failed to send checkout lead emails:', emailErr.message);
+        console.error('Failed to process order email & invoice dispatches:', emailErr.message);
       }
     })();
 

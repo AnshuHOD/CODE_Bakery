@@ -182,18 +182,30 @@
             const flavorVal = urlParams.get('flavor');
             const frostingVal = urlParams.get('frosting');
             const weightVal = urlParams.get('weight');
+            const shapeVal = urlParams.get('shape');
             const messageVal = urlParams.get('message');
             
             if (weightVal) {
               const sizeInput = firstRow.querySelector('[name="sizeKg[]"]');
               if (sizeInput) sizeInput.value = weightVal;
             }
-            if (flavorVal) {
+            
+            let flavourDetails = flavorVal || '';
+            if (shapeVal && shapeVal !== 'round') {
+              const shapeAddonText = shapeVal === 'heart' ? 'Heart Shape (+₹150)' : 'Square Shape (+₹100)';
+              flavourDetails = flavourDetails ? `${flavourDetails} — ${shapeAddonText}` : shapeAddonText;
+            }
+            if (frostingVal && frostingVal !== 'Standard') {
+              flavourDetails += ` (Frosting: ${frostingVal})`;
+            }
+
+            if (flavourDetails) {
               const flavorInput = firstRow.querySelector('[name="flavour[]"]');
               if (flavorInput) {
-                flavorInput.value = (frostingVal && frostingVal !== 'Standard') ? `${flavorVal} (Frosting: ${frostingVal})` : flavorVal;
+                flavorInput.value = flavourDetails;
               }
             }
+
             if (messageVal) {
               const msgInput = firstRow.querySelector('[name="customMessage[]"]');
               if (msgInput) msgInput.value = messageVal;

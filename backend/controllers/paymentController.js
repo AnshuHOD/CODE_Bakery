@@ -64,16 +64,35 @@ const verifyPayment = async (req, res) => {
     // Run PDF invoice generation and emailing asynchronously in the background
     (async () => {
       try {
-        // Step 4: PDF Invoice generate karo
-        const invoicePath = await generateInvoice(order);
+        if (!order.invoiceSent) {
+          // Step 4: PDF Invoice generate karo
+          const invoicePath = await generateInvoice(order);
 
-        // Step 5: Customer ko confirmation + invoice email
-        await sendOrderConfirmationEmail(order, invoicePath);
-        order.invoiceSent = true;
-        await order.save();
+          // Step 5: Customer ko confirmation + invoice email
+          await sendOrderConfirmationEmail(order, invoicePath);
+          order.invoiceSent = true;
+          await order.save();
 
-        // Step 6: Admin ko notification
-        await sendAdminNotificationEmail(order);
+          // Step 6: Admin ko notification
+          await sendAdminNotificationEmail(order);
+        } else {
+          // If invoice was already sent during placeOrder, send a quick Payment Received update email to admin
+          const transporter = require('../config/email');
+          await transporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to: process.env.EMAIL_USER,
+            subject: `💰 Payment Received Alert! Order: ${order.orderId} — ₹${order.total}`,
+            html: `
+              <h2>💰 Payment Received & Verified!</h2>
+              <p><strong>Order ID:</strong> ${order.orderId}</p>
+              <p><strong>Customer:</strong> ${order.customer.name} (${order.customer.email})</p>
+              <p><strong>Phone:</strong> ${order.customer.phone}</p>
+              <p><strong>Total Paid:</strong> ₹${order.total}</p>
+              <p><strong>Razorpay Payment ID:</strong> ${razorpayPaymentId}</p>
+              <p><strong>Status:</strong> Payment Confirmed & Paid</p>
+            `
+          });
+        }
       } catch (bgErr) {
         console.error('Background order post-processing error:', bgErr);
       }

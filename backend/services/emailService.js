@@ -328,6 +328,37 @@ const sendManualCheckoutLeadCustomerEmail = async (lead, order) => {
   }
 };
 
+const sendWhatsAppLeadCustomerEmail = async (lead) => {
+  if (!lead.email) return;
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: lead.email,
+      subject: `👋 Thanks for reaching out to Hooda's Bakery!`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
+          <div style="background: #075E54; color: white; padding: 24px; text-align: center;">
+            <h1 style="margin: 0; font-size: 22px;">Hooda's Bakery 🎂</h1>
+            <p style="margin: 4px 0; color: #E8F8F5;">We received your inquiry via WhatsApp!</p>
+          </div>
+          <div style="padding: 24px; color: #333;">
+            <p>Hi <strong>${lead.name || 'Valued Customer'}</strong>,</p>
+            <p>Thank you for visiting Hooda's Bakery! We noticed you connected with us via WhatsApp. Our team has received your inquiry and will respond to you shortly on WhatsApp or Phone (<strong>${lead.phone}</strong>).</p>
+            <p>If you'd like to browse our fresh baked goods menu or order directly online, click below:</p>
+            <p style="text-align: center; margin: 24px 0;">
+              <a href="${process.env.FRONTEND_URL || 'https://hoodas-bakery.vercel.app'}/menu.html" style="background: #075E54; color: white; padding: 12px 28px; border-radius: 50px; text-decoration: none; font-weight: bold;">Explore Today's Menu →</a>
+            </p>
+            <p>With love,<br><strong>Hooda's Bakery Team</strong> 🎂</p>
+          </div>
+        </div>
+      `
+    });
+    console.log(`✅ WhatsApp Lead customer email sent to: ${lead.email}`);
+  } catch (err) {
+    console.error("❌ Failed to send WhatsApp lead email to customer:", err.message);
+  }
+};
+
 module.exports = {
   sendOrderConfirmationEmail,
   sendAdminNotificationEmail,
@@ -336,6 +367,7 @@ module.exports = {
   sendChatbotLeadAdminEmail,
   sendChatbotLeadCustomerEmail,
   sendWhatsAppLeadAdminEmail,
+  sendWhatsAppLeadCustomerEmail,
   sendManualCheckoutLeadAdminEmail,
   sendManualCheckoutLeadCustomerEmail
 };

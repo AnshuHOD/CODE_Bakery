@@ -3,7 +3,12 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const Lead = require('../models/Lead');
 const Customer = require('../models/Customer');
-const { sendWhatsAppLeadAdminEmail } = require('../services/emailService');
+const { 
+  sendWhatsAppLeadAdminEmail, 
+  sendWhatsAppLeadCustomerEmail,
+  sendManualCheckoutLeadAdminEmail,
+  sendManualCheckoutLeadCustomerEmail 
+} = require('../services/emailService');
 
 // POST /api/leads — Public endpoint for lead generation (Chatbot & WhatsApp)
 router.post('/', async (req, res) => {
@@ -18,7 +23,7 @@ router.post('/', async (req, res) => {
 
     const lead = await Lead.create({
       customer: customer ? customer._id : undefined,
-      name: name || 'WhatsApp Visitor',
+      name: name || (source === 'whatsapp' ? 'WhatsApp Visitor' : 'Website Visitor'),
       email,
       phone,
       interestedIn,
@@ -28,9 +33,13 @@ router.post('/', async (req, res) => {
       notes
     });
 
-    // Send admin email notification if it's a WhatsApp connect query
+    // Send emails based on source
     if (lead.source === 'whatsapp') {
       sendWhatsAppLeadAdminEmail(lead).catch(console.error);
+      if (email) sendWhatsAppLeadCustomerEmail(lead).catch(console.error);
+    } else {
+      sendManualCheckoutLeadAdminEmail(lead).catch(console.error);
+      if (email) sendManualCheckoutLeadCustomerEmail(lead).catch(console.error);
     }
 
     res.status(201).json({ success: true, data: lead });
