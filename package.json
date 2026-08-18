@@ -1,6 +1,6 @@
 {
   "name": "bakery-automation-root",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Root package manager for Render fallback deployment",
   "scripts": {
     "build": "cd backend && npm install",
