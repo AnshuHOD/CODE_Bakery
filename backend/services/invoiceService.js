@@ -111,12 +111,18 @@ const generateInvoice = (order) => {
     rowY += 45;
 
     // Payment Block
+    const isPaid = order.payment && order.payment.status === 'paid';
+    const payStatusText = isPaid ? '✅ Payment Status: PAID' : '⏳ Payment Status: PENDING ONLINE PAYMENT';
+    const txnRef = (order.payment && order.payment.razorpayPaymentId) ? order.payment.razorpayPaymentId : 'Pending / Verification';
+    const paidAtDate = (order.payment && order.payment.paidAt) ? new Date(order.payment.paidAt) : new Date(order.createdAt || Date.now());
+    const paidDateStr = isNaN(paidAtDate.getTime()) ? new Date().toLocaleString('en-IN') : paidAtDate.toLocaleString('en-IN');
+
     doc.fillColor('#FCEEEB').rect(50, rowY, 495, 45).fill();
     doc.strokeColor('#D97B66').lineWidth(0.5).rect(50, rowY, 495, 45).stroke();
     doc.fillColor('#D97B66').fontSize(10).font('Helvetica-Bold')
-      .text(`✅ Payment Status: PAID`, 60, rowY + 8);
+      .text(payStatusText, 60, rowY + 8);
     doc.font('Helvetica').fontSize(8.5).fillColor('#4A3530')
-      .text(`Transaction Reference: ${order.payment.razorpayPaymentId} | Paid on: ${new Date(order.payment.paidAt).toLocaleString('en-IN')}`, 60, rowY + 24);
+      .text(`Transaction Reference: ${txnRef} | Date: ${paidDateStr}`, 60, rowY + 24);
 
     // Special Instructions
     if (order.specialInstructions) {
