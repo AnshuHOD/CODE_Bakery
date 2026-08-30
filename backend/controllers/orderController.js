@@ -118,31 +118,18 @@ const placeOrder = async (req, res) => {
     lead.convertedOrderId = order._id;
     await lead.save();
 
-    // Send lead emails and detailed order confirmation + PDF invoice asynchronously
+    // Send lead inquiry emails asynchronously (non-blocking)
     (async () => {
       try {
         const { 
           sendManualCheckoutLeadAdminEmail, 
-          sendManualCheckoutLeadCustomerEmail,
-          sendOrderConfirmationEmail,
-          sendAdminNotificationEmail
+          sendManualCheckoutLeadCustomerEmail 
         } = require('../services/emailService');
-        const { generateInvoice } = require('../services/invoiceService');
-
-        // Populate customer object so customer.email, customer.name, and customer.phone are available
-        await order.populate('customer');
 
         await sendManualCheckoutLeadAdminEmail(lead, order);
         await sendManualCheckoutLeadCustomerEmail(lead, order);
-
-        // Generate PDF Invoice immediately so customer & admin get detailed confirmation right away
-        const invoicePath = await generateInvoice(order);
-        await sendOrderConfirmationEmail(order, invoicePath);
-        await sendAdminNotificationEmail(order);
-        order.invoiceSent = true;
-        await order.save();
       } catch (emailErr) {
-        console.error('Failed to process order email & invoice dispatches:', emailErr.message);
+        console.error('Failed to process checkout lead email dispatches:', emailErr.message);
       }
     })();
 
