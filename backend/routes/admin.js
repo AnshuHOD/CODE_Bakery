@@ -29,7 +29,7 @@ router.get('/stats', protect, async (req, res) => {
       ]),
       Lead.countDocuments(),
       Customer.countDocuments(),
-      Order.find().populate('customer', 'name').sort({ createdAt: -1 }).limit(5),
+      Order.find().select('orderId customerName customer total status payment createdAt').populate('customer', 'name').sort({ createdAt: -1 }).limit(5),
     ]);
 
     res.json({

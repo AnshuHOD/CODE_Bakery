@@ -18,6 +18,9 @@ const orderItemSchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema({
   orderId: { type: String, unique: true },   // ORD-2031 format
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
+  customerName: String,                      // immutable snapshot at time of order
+  customerEmail: String,                     // immutable snapshot at time of order
+  customerPhone: String,                     // immutable snapshot at time of order
   lead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
   items: [orderItemSchema],
   total: { type: Number, required: true },

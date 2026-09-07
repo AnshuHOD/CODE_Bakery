@@ -48,8 +48,8 @@ export default function Orders() {
                 <tr key={o._id}>
                   <td style={{ fontWeight: '700', color: '#1B2A4A' }}>{o.orderId}</td>
                   <td>
-                    <strong style={{ color: '#1B2A4A' }}>{o.customer?.name}</strong><br/>
-                    <small style={{ color: '#666' }}>{o.customer?.phone}</small>
+                    <strong style={{ color: '#1B2A4A' }}>{o.customerName || o.customer?.name || 'Customer'}</strong><br/>
+                    <small style={{ color: '#666' }}>{o.customerPhone || o.customer?.phone || ''}</small>
                   </td>
                   <td style={{ color: '#555', fontSize: '13px', maxWidth: '250px' }}>
                     {o.items.map(i => `${i.productName} (${i.sizeKg}kg ${i.flavour ? `- ${i.flavour}` : ''})`).join(', ')}

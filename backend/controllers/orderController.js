@@ -24,10 +24,10 @@ const placeOrder = async (req, res) => {
     if (!customer) {
       customer = await Customer.create({ name, email, phone, address });
     } else {
-      // Update existing customer record with the latest checkout details
-      customer.name = name;
-      customer.phone = phone;
-      customer.address = address;
+      // Update contact details without overwriting existing registered name
+      if (!customer.name) customer.name = name;
+      if (phone) customer.phone = phone;
+      if (address) customer.address = address;
       await customer.save();
     }
 
@@ -106,6 +106,9 @@ const placeOrder = async (req, res) => {
     const order = await Order.create({
       orderId,
       customer: customer._id,
+      customerName: name,
+      customerEmail: email.toLowerCase().trim(),
+      customerPhone: phone,
       lead: lead._id,
       items: processedItems,
       total,

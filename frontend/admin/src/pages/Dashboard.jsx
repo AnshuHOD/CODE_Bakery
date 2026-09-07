@@ -66,7 +66,7 @@ export default function Dashboard() {
                 stats.recentOrders.map(o => (
                   <tr key={o._id}>
                     <td style={{ fontWeight: '700', color: '#1B2A4A' }}>{o.orderId}</td>
-                    <td>{o.customer?.name || 'Anonymous'}</td>
+                    <td>{o.customerName || o.customer?.name || 'Anonymous'}</td>
                     <td style={{ color: '#0F6E56', fontWeight: '700' }}>₹{o.total}</td>
                     <td>
                       <span 

@@ -9,9 +9,7 @@ const rawPass = process.env.EMAIL_PASS || 'tkublahmfelgcsyf';
 const emailPass = rawPass.replace(/\s+/g, '');
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  service: 'gmail',
   auth: {
     user: emailUser,
     pass: emailPass,
@@ -24,7 +22,7 @@ const transporter = nodemailer.createTransport({
 // Verify setup on server start
 transporter.verify((error) => {
   if (error) console.error('❌ Email setup error:', error.message);
-  else console.log(`✅ Email service ready (${emailUser} via smtp.gmail.com:465)`);
+  else console.log(`✅ Email service ready (${emailUser} via Gmail Service)`);
 });
 
 module.exports = transporter;
