@@ -82,10 +82,10 @@ ${nameRetentionRule}
 - Dynamically detect the customer's language. If they reply in Hindi or Hinglish, speak in Hindi. If they reply in Punjabi, speak in Punjabi. Context-switch naturally on the fly without making the customer explicitly request it or select options.
 
 # ORDER COMPLETION STRUCTURAL PAYLOAD
-- When (and ONLY when) you have successfully collected all 4 order details (Item & Qty, Phone Number, Email, and Address & Time slot) AND outputted your final summary confirmation message ("Thank you! I have noted down your order for [Item & Qty]..."), you MUST append a structured JSON payload block at the very end of your response on a new line.
+- When you summarize an order confirmation message ("Thank you! I have noted down your order for [Item & Qty]..."), you MUST ALWAYS append a structured JSON payload block at the very end of your response on a new line.
 - The JSON block must look EXACTLY like this:
 |ORDER_DATA:{"name":"${userGreetingName || 'Customer'}","phone":"[Phone]","email":"[Email]","items":"[Item & Qty]","address":"[Address]","timeSlot":"[Time Slot]"}||
-- Replace [Phone], [Email], [Item & Qty], [Address], [Time Slot] with the actual gathered details. Do NOT output this JSON block if the order details are incomplete or you are still in the process of gathering them.
+- Replace [Phone], [Email], [Item & Qty], [Address], [Time Slot] with the actual gathered details. If Email was not provided, leave email as "".
 
 # STRICT COMPLIANCE & BOUNDARIES
 - **Anti-Forgetfulness Guideline**: You MUST inspect previous user responses carefully to avoid asking duplicate questions (like asking for their phone number twice, or asking for the item again if they already specified it). If a user corrects a field (e.g., updates address), update it in your internal memory and move on.
@@ -137,41 +137,63 @@ ${menuContext || "Premium Chocolate Truffle Cake, Blueberry Cheesecake Slice, Ar
 
       // Extract and process structured order booking payload if present
       const orderPayloadMatch = reply.match(/\|ORDER_DATA:([\s\S]*?)\|\|/);
+      const isOrderSummary = reply.toLowerCase().includes("noted down your order") || reply.toLowerCase().includes("baking team") || reply.toLowerCase().includes("confirm the payment");
+
+      let parsedLead = null;
+
       if (orderPayloadMatch && orderPayloadMatch[1]) {
         try {
-          const parsedLead = JSON.parse(orderPayloadMatch[1].trim());
-          // Strip the structured block from user-facing text
+          parsedLead = JSON.parse(orderPayloadMatch[1].trim());
           reply = reply.replace(/\|ORDER_DATA:[\s\S]*?\|\|/g, "").trim();
+        } catch (err) {
+          console.error("[Chatbot] Failed to parse completed order payload:", err.message);
+        }
+      } else if (isOrderSummary) {
+        // Fallback parsing if Gemini omitted the JSON block but outputted the summary text
+        parsedLead = {
+          name: customerName || 'Valued Customer',
+          phone: '',
+          email: '',
+          items: '',
+          address: ''
+        };
+      }
 
-          // Save chatbot booking to MongoDB Lead model
-          const newLead = new Lead({
-            name: parsedLead.name || customerName || 'Valued Customer',
-            email: parsedLead.email,
-            phone: parsedLead.phone,
-            interestedIn: parsedLead.items,
-            notes: `Chatbot Automated Booking.\nAddress: ${parsedLead.address}\nTime Slot: ${parsedLead.timeSlot}`,
-            status: 'new',
-            source: 'website'
-          });
-          await newLead.save();
-          console.log(`[Chatbot] Saved new booking Lead to DB: ${newLead._id}`);
+      if (parsedLead) {
+        // Save chatbot booking to MongoDB Lead model
+        const newLead = new Lead({
+          name: parsedLead.name || customerName || 'Valued Customer',
+          email: parsedLead.email || '',
+          phone: parsedLead.phone || '',
+          interestedIn: parsedLead.items || 'Bakery Items',
+          notes: `Chatbot Automated Booking.\nAddress: ${parsedLead.address || ''}\nTime Slot: ${parsedLead.timeSlot || ''}`,
+          status: 'new',
+          source: 'website'
+        });
+        await newLead.save().catch(console.error);
+        console.log(`[Chatbot] Saved new booking Lead to DB: ${newLead._id}`);
 
-          // Build URL query params to auto-fill checkout page
-          const nameParam = encodeURIComponent(parsedLead.name || customerName || '');
-          const emailParam = encodeURIComponent(parsedLead.email || '');
-          const phoneParam = encodeURIComponent(parsedLead.phone || '');
-          const addressParam = encodeURIComponent(parsedLead.address || '');
-          const timeSlotParam = encodeURIComponent(parsedLead.timeSlot || '');
-          const itemsParam = encodeURIComponent(parsedLead.items || '');
+        // Build URL query params to auto-fill checkout page
+        const nameParam = encodeURIComponent(parsedLead.name || customerName || '');
+        const emailParam = encodeURIComponent(parsedLead.email || '');
+        const phoneParam = encodeURIComponent(parsedLead.phone || '');
+        const addressParam = encodeURIComponent(parsedLead.address || '');
+        const timeSlotParam = encodeURIComponent(parsedLead.timeSlot || '');
+        const itemsParam = encodeURIComponent(parsedLead.items || '');
 
-          const payUrl = `order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}&address=${addressParam}&timeSlot=${timeSlotParam}&items=${itemsParam}`;
-          
-          // Append auto-fill payment button to user-facing reply
-          reply += `<br/><br/><a href="${payUrl}" style="display:inline-block; background:#D97B66; color:white; padding:10px 20px; border-radius:25px; font-weight:bold; text-decoration:none; box-shadow:0 4px 10px rgba(217,123,102,0.3); font-size:13px;">💳 Click Here to Pay & Auto-Fill Checkout →</a>`;
+        const payUrl = `order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}&address=${addressParam}&timeSlot=${timeSlotParam}&items=${itemsParam}`;
+        
+        // Append auto-fill payment button to user-facing reply if not already appended
+        if (!reply.includes("order.html")) {
+          reply += `<br/><br/><a href="${payUrl}" style="display:inline-block; background:#D97B66; color:white; padding:12px 24px; border-radius:50px; font-weight:bold; text-decoration:none; box-shadow:0 4px 15px rgba(217,123,102,0.3); font-size:13px; font-family:sans-serif;">💳 Click Here to Pay & Auto-Fill Checkout →</a>`;
+        }
 
-          // Asynchronously dispatch email alerts (non-blocking)
-          sendChatbotLeadAdminEmail(parsedLead).catch(console.error);
+        // Asynchronously dispatch email alerts (non-blocking)
+        sendChatbotLeadAdminEmail(parsedLead).catch(console.error);
+        if (parsedLead.email) {
           sendChatbotLeadCustomerEmail(parsedLead).catch(console.error);
+        }
+      }
         } catch (err) {
           console.error("[Chatbot] Failed to parse completed order payload:", err.message);
         }
