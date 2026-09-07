@@ -87,7 +87,9 @@ const generateInvoice = (order) => {
       // Draw subtle row separator
       doc.strokeColor('#EFE7DE').lineWidth(0.5).moveTo(50, rowY + 16).lineTo(545, rowY + 16).stroke();
       
-      const isCake = item.category === 'cake' || (item.product && item.product.category === 'cake');
+      const catStr = (item.category || (item.product && item.product.category) || '').toLowerCase();
+      const pName = (item.productName || '').toLowerCase();
+      const isCake = catStr === 'cake' || pName.includes('cake') || (item.sizeKg && item.sizeKg % 1 !== 0);
       const qtyText = isCake ? `${item.sizeKg} kg` : `${item.sizeKg} pc`;
       const rateText = isCake ? `Rs. ${item.pricePerKg}/kg` : `Rs. ${item.pricePerKg}/pc`;
       const amountText = `Rs. ${item.subtotal}`;

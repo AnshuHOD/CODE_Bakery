@@ -40,7 +40,8 @@ function initializeChatbotGreeting() {
   
   // Proactively auto-clean bad/glitched names from old sessions!
   if (savedName) {
-    const isBadName = !extractName(savedName) || savedName.toLowerCase().includes('waffle') || savedName.toLowerCase().includes('hii');
+    const low = savedName.toLowerCase().trim();
+    const isBadName = !extractName(savedName) || low.includes('waffle') || low.includes('hii') || low.includes('whatsapp') || low.includes('visitor') || low.includes('guest') || low === 'null' || low === 'undefined';
     if (isBadName) {
       localStorage.removeItem('bakery_customer_name');
       savedName = null;
@@ -326,8 +327,10 @@ function handleSend() {
     // Clean any prefix leakage from 'myself', 'this is', 'i am'
     cleanedName = cleanedName.replace(/\b(myself|i am|im|this is|my name is|mera naam)\b/gi, "").trim();
     // Re-verify that we didn't wipe the name completely
-    if (!cleanedName) {
-      cleanedName = "Guest";
+    if (!cleanedName || extractName(cleanedName) === null) {
+      botState = 'idle';
+      handleGeneralChat(text);
+      return;
     }
 
     localStorage.setItem('bakery_customer_name', cleanedName);
@@ -344,8 +347,10 @@ function handleSend() {
   } else if (botState === 'lead_name') {
     // If they explicitly reply with name, save it
     const cleanedName = extractName(text) || text;
-    localStorage.setItem('bakery_customer_name', cleanedName);
-    leadData.name = cleanedName;
+    if (extractName(cleanedName)) {
+      localStorage.setItem('bakery_customer_name', cleanedName);
+      leadData.name = cleanedName;
+    }
     botState = 'lead_email';
     addBotMessage(`Nice to meet you, ${cleanedName}! Please type your Email Address / आप अपनी ईमेल टाइप कर दीजिए:`);
   } else if (botState === 'lead_email') {
@@ -360,42 +365,42 @@ function handleSend() {
   } else if (botState === 'lead_phone') {
     leadData.phone = text;
     botState = 'lead_desc';
-    addBotMessage("Perfect! Tell me about the cake you're dreaming of (e.g. flavour, event theme, size, shape, dietary preferences):");
+    addBotMessage("Great! What cake or treat are you looking for? (e.g. 2kg Chocolate Truffle with heart shape)");
   } else if (botState === 'lead_desc') {
     leadData.interestedIn = text;
     botState = 'lead_budget';
-    addBotMessage("Almost done! What is your **estimated budget** for this order (e.g., ₹1500, ₹3000)?");
+    addBotMessage("Got it! What is your estimated budget for this order? (e.g. ₹1500 - ₹2500)");
   } else if (botState === 'lead_budget') {
     leadData.estimatedBudget = text;
-    submitLead();
+    botState = 'idle';
+    showTypingIndicator();
+    
+    // Save to CRM via API
+    fetch(`${API_BASE}/leads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(leadData)
+    })
+    .then(res => res.json())
+    .then(data => {
+      removeTypingIndicator();
+      if (data.success) {
+        addBotMessage(`Thank you, ${leadData.name || 'Valued Guest'}! 🌟 Your custom request has been logged into our bakery system. Our head chef will contact you at **${leadData.phone}** shortly!`);
+      } else {
+        addBotMessage("Thanks for providing the details! Our team will contact you shortly.");
+      }
+      showOptions();
+    })
+    .catch(err => {
+      removeTypingIndicator();
+      addBotMessage("Thanks! Your details have been noted.");
+      showOptions();
+    });
   } else {
     // idle state - conversational chatbot response
     // Names should ONLY be extracted in the welcome_name state, never in the idle state
     handleGeneralChat(text);
   }
-}
-
-async function submitLead() {
-  botState = 'idle';
-  showTypingIndicator();
-  try {
-    const res = await fetch(`${API_BASE}/leads`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(leadData)
-    });
-    const result = await res.json();
-    removeTypingIndicator();
-    if (result.success) {
-      addBotMessage("🎉 **Success!** Your inquiry has been logged in our CRM. Our head chef will contact you shortly via phone or email to discuss details and finalize pricing. Thank you!");
-    } else {
-      addBotMessage("Your inquiry details were compiled, but we had a hiccup saving them to the CRM database. We have notified our team.");
-    }
-  } catch (err) {
-    removeTypingIndicator();
-    addBotMessage("Thank you! I saved your specifications locally, but could not sync with CRM database. We will check it.");
-  }
-  showOptions();
 }
 
 async function handleGeneralChat(text) {
@@ -448,14 +453,14 @@ async function handleGeneralChat(text) {
  * Handles English & Hinglish formats like "My name is Anshu", "Mera naam Rohan hai", "hey..im..Vikram", etc.
  */
 function extractName(input) {
+  if (!input || typeof input !== 'string') return null;
+
   // 1. If input is an email, phone number, or contains numbers, it is NOT a name!
   if (input.includes('@') || input.toLowerCase().includes('.com') || input.toLowerCase().includes('.in') || /[0-9]/.test(input)) {
     return null;
   }
 
   // 2. Clean punctuation by replacing any non-word, non-space, and non-Devanagari characters with space
-  // This preserves English letters (a-z), numbers, spaces, and Devanagari script (\u0900-\u097F)
-  // We explicitly replace Devanagari full stops (\u0964 and \u0965) with spaces to strip them
   let cleanInput = input.replace(/[\u0964\u0965]/g, " ").replace(/[^\w\s\u0900-\u097F]/g, " ").replace(/\s+/g, " ").trim();
   
   // 3. Clean variations of greetings in English and Hindi
@@ -466,7 +471,7 @@ function extractName(input) {
     return null; // pure greeting, not a name
   }
 
-  // 4. Block conversational/instruction keywords
+  // 4. Block conversational/instruction/dummy keywords
   const conversationalKeywords = [
     'speak', 'talk', 'english', 'hindi', 'language', 'track', 'order', 
     'cake', 'menu', 'help', 'how', 'what', 'where', 'why', 'who', 
@@ -474,14 +479,21 @@ function extractName(input) {
     'sourdough', 'pastry', 'bread', 'cookie', 'cookies', 'croissant',
     'waffle', 'waffles', 'hai', 'he', 'h', 'aaj', 'kya', 'tha', 'thi',
     'milega', 'milegi', 'price', 'rate', 'address', 'deliver', 'delivery',
-    'pickup', 'time', 'slot', 'date', 'order', 'book', 'booking'
+    'pickup', 'time', 'slot', 'date', 'order', 'book', 'booking',
+    'whatsapp', 'visitor', 'guest', 'admin', 'user', 'customer', 'valued customer',
+    'test', 'na', 'null', 'undefined', 'bot', 'bakebot', 'hooda', 'hoodas'
   ];
 
   const wordsList = lowInput.split(/\s+/);
   for (const keyword of conversationalKeywords) {
     if (wordsList.includes(keyword)) {
-      return null; // Conversational word detected, not a name
+      return null; // Conversational or dummy word detected, not a name
     }
+  }
+
+  // Check if string starts with whatsapp or website visitor
+  if (lowInput.startsWith('whatsapp') || lowInput.startsWith('website visitor') || lowInput.startsWith('guest')) {
+    return null;
   }
 
   // 5. English Regex patterns to match common ways of stating a name:
@@ -502,10 +514,10 @@ function extractName(input) {
     const match = cleanInput.match(pattern);
     if (match && match[1]) {
       let namePart = match[1].trim();
-      // Remove trailing Hindi/English verbs or spaces
       namePart = namePart.replace(/\b(hai|hoon|hu|here|ji|है|हूं|हूँ)\b/gi, "").trim();
       if (namePart && !greetingsRegex.test(namePart.toLowerCase())) {
-        return namePart.split(/\s+/).slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        const resName = namePart.split(/\s+/).slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        if (!conversationalKeywords.includes(resName.toLowerCase())) return resName;
       }
     }
   }
@@ -514,13 +526,11 @@ function extractName(input) {
   let words = cleanInput.split(/\s+/).filter(w => !greetingsRegex.test(w));
   if (words.length > 0) {
     let startIndex = 0;
-    // Skip pronouns/prefix words in both English and Hindi
     const prefixRegex = /^(my|name|is|i|am|im|this|mera|naam|hai|hoon|hu|here|ji|मायसैल्फ|मयासेल्फ|इट्स|इतस|है|हूं|हूँ)$/i;
     while (startIndex < words.length && prefixRegex.test(words[startIndex])) {
       startIndex++;
     }
     
-    // If there are more than 3 words left, it's a sentence or address, not a name
     if (words.length - startIndex > 3) {
       return null;
     }
@@ -530,7 +540,7 @@ function extractName(input) {
       const parsed = finalWords.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
       const cleanedParsed = parsed.replace(/\b(hai|hoon|hu|here|ji|है|हूं|हूँ)\b/gi, "").trim();
       if (cleanedParsed && !greetingsRegex.test(cleanedParsed.toLowerCase())) {
-        return cleanedParsed;
+        if (!conversationalKeywords.includes(cleanedParsed.toLowerCase())) return cleanedParsed;
       }
     }
   }

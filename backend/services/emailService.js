@@ -14,9 +14,15 @@ const sendOrderConfirmationEmail = async (order, invoicePath) => {
     return;
   }
 
+  const getItemUnit = (i) => {
+    const cat = (i.category || (i.product && i.product.category) || '').toLowerCase();
+    const name = (i.productName || '').toLowerCase();
+    return (cat === 'cake' || name.includes('cake') || (i.sizeKg && i.sizeKg % 1 !== 0)) ? 'kg' : 'pc';
+  };
+
   const customerName = (order.customer && order.customer.name) ? order.customer.name : 'Valued Customer';
   const itemsList = (order.items || [])
-    .map(i => `<li>${i.productName} - ${i.sizeKg} ${i.category === 'cake' ? 'kg' : 'pc'} @ ₹${i.pricePerKg} = <strong>₹${i.subtotal}</strong></li>`)
+    .map(i => `<li>${i.productName} - ${i.sizeKg} ${getItemUnit(i)} @ ₹${i.pricePerKg}/${getItemUnit(i)} = <strong>₹${i.subtotal}</strong></li>`)
     .join('');
 
   try {
@@ -40,7 +46,7 @@ const sendOrderConfirmationEmail = async (order, invoicePath) => {
               <p><strong>Delivery Address:</strong> ${order.deliveryAddress ? `${order.deliveryAddress.street || ''}, ${order.deliveryAddress.city || 'Rohtak'}` : 'Specified at checkout'}</p>
             </div>
 
-            <h3 style="color: #3D2620;">Order Items:</h3>
+            <h3 style="color: #3D2620;">Order Items (Separated Rates):</h3>
             <ul>${itemsList}</ul>
             <p style="font-size: 18px; color: #D97B66;"><strong>Total Amount Paid: ₹${order.total}</strong></p>
 
@@ -66,11 +72,17 @@ const sendOrderConfirmationEmail = async (order, invoicePath) => {
 // 2. Send Paid Order Alert to Admin (After Payment)
 const sendAdminNotificationEmail = async (order) => {
   try {
+    const getItemUnit = (i) => {
+      const cat = (i.category || (i.product && i.product.category) || '').toLowerCase();
+      const name = (i.productName || '').toLowerCase();
+      return (cat === 'cake' || name.includes('cake') || (i.sizeKg && i.sizeKg % 1 !== 0)) ? 'kg' : 'pc';
+    };
+
     const adminMail = getAdminEmail();
     const customerName = (order.customer && order.customer.name) ? order.customer.name : 'Customer';
     const customerEmail = (order.customer && order.customer.email) ? order.customer.email : 'N/A';
     const customerPhone = (order.customer && order.customer.phone) ? order.customer.phone : 'N/A';
-    const itemsSummary = (order.items || []).map(i => `${i.productName} (${i.sizeKg} ${i.category === 'cake' ? 'kg' : 'pc'})`).join(', ');
+    const itemsSummary = (order.items || []).map(i => `${i.productName} (${i.sizeKg} ${getItemUnit(i)} @ ₹${i.pricePerKg}/${getItemUnit(i)} = ₹${i.subtotal})`).join(', ');
 
     await transporter.sendMail({
       from: getDefaultFrom(),

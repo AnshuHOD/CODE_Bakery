@@ -82,6 +82,7 @@ const placeOrder = async (req, res) => {
       processedItems.push({
         ...item,
         productName: displayName,
+        category: product.category,
         pricePerKg: product.pricePerKg,
         subtotal
       });

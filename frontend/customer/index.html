@@ -790,9 +790,22 @@
   <script>
     const CUST_API = `${CONFIG.API_BASE}/customers`;
 
+    function isDummyName(str) {
+      if (!str) return true;
+      const lower = str.trim().toLowerCase();
+      const dummies = ['whatsapp', 'whatsapp visitor', 'website visitor', 'guest', 'visitor', 'null', 'undefined', 'customer', 'valued customer', 'test', 'na'];
+      return dummies.some(d => lower === d || lower.startsWith('whatsapp') || lower.startsWith('website visitor'));
+    }
+
     function updateAuthNavbar() {
-      const email = localStorage.getItem('bakery_customer_email');
-      const name = localStorage.getItem('bakery_customer_name');
+      let email = localStorage.getItem('bakery_customer_email');
+      let name = localStorage.getItem('bakery_customer_name');
+      
+      if (name && isDummyName(name)) {
+        localStorage.removeItem('bakery_customer_name');
+        name = null;
+      }
+
       const container = document.getElementById('navAuthSection');
       if (!container) return;
 

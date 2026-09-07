@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const orderItemSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
   productName: String,       // snapshot at time of order
+  category: String,          // e.g. cake, pastry, bread, cookie
   sizeKg: Number,
   pricePerKg: Number,
   subtotal: Number,
