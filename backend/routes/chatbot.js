@@ -194,10 +194,6 @@ ${menuContext || "Premium Chocolate Truffle Cake, Blueberry Cheesecake Slice, Ar
           sendChatbotLeadCustomerEmail(parsedLead).catch(console.error);
         }
       }
-        } catch (err) {
-          console.error("[Chatbot] Failed to parse completed order payload:", err.message);
-        }
-      }
 
       res.json({ success: true, reply });
     } else {
