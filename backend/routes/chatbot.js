@@ -156,6 +156,19 @@ ${menuContext || "Premium Chocolate Truffle Cake, Blueberry Cheesecake Slice, Ar
           await newLead.save();
           console.log(`[Chatbot] Saved new booking Lead to DB: ${newLead._id}`);
 
+          // Build URL query params to auto-fill checkout page
+          const nameParam = encodeURIComponent(parsedLead.name || customerName || '');
+          const emailParam = encodeURIComponent(parsedLead.email || '');
+          const phoneParam = encodeURIComponent(parsedLead.phone || '');
+          const addressParam = encodeURIComponent(parsedLead.address || '');
+          const timeSlotParam = encodeURIComponent(parsedLead.timeSlot || '');
+          const itemsParam = encodeURIComponent(parsedLead.items || '');
+
+          const payUrl = `order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}&address=${addressParam}&timeSlot=${timeSlotParam}&items=${itemsParam}`;
+          
+          // Append auto-fill payment button to user-facing reply
+          reply += `<br/><br/><a href="${payUrl}" style="display:inline-block; background:#D97B66; color:white; padding:10px 20px; border-radius:25px; font-weight:bold; text-decoration:none; box-shadow:0 4px 10px rgba(217,123,102,0.3); font-size:13px;">💳 Click Here to Pay & Auto-Fill Checkout →</a>`;
+
           // Asynchronously dispatch email alerts (non-blocking)
           sendChatbotLeadAdminEmail(parsedLead).catch(console.error);
           sendChatbotLeadCustomerEmail(parsedLead).catch(console.error);
