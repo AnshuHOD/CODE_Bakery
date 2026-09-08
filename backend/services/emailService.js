@@ -6,6 +6,86 @@ const fs = require('fs');
 const getAdminEmail = () => process.env.EMAIL_USER || 'anshuh027@gmail.com';
 const getDefaultFrom = () => process.env.EMAIL_FROM || `Hooda's Bakery <${getAdminEmail()}>`;
 
+// Unified Email Dispatcher supporting HTTPS REST API (Resend / Brevo) to bypass cloud SMTP port blocks
+const sendMail = async ({ to, subject, html, attachments = [] }) => {
+  if (!to) return;
+
+  const resendKey = process.env.RESEND_API_KEY;
+  const brevoKey = process.env.BREVO_API_KEY;
+  const adminMail = getAdminEmail();
+
+  // 1. Try Resend HTTPS API (Port 443 — Never blocked by Render cloud firewall)
+  if (resendKey) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: "Hooda's Bakery <onboarding@resend.dev>",
+          to: [to],
+          subject: subject,
+          html: html
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        console.log(`✅ Email sent via Resend HTTPS API to: ${to}`);
+        return data;
+      } else {
+        console.error(`❌ Resend API Error:`, JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error(`❌ Resend HTTPS API failed:`, err.message);
+    }
+  }
+
+  // 2. Try Brevo HTTPS API (Port 443 — Never blocked by Render cloud firewall)
+  if (brevoKey) {
+    try {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': brevoKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: "Hooda's Bakery", email: adminMail },
+          to: [{ email: to }],
+          subject: subject,
+          htmlContent: html
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        console.log(`✅ Email sent via Brevo HTTPS API to: ${to}`);
+        return data;
+      } else {
+        console.error(`❌ Brevo API Error:`, JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error(`❌ Brevo HTTPS API failed:`, err.message);
+    }
+  }
+
+  // 3. Fallback to Nodemailer transporter
+  try {
+    const info = await transporter.sendMail({
+      from: getDefaultFrom(),
+      to,
+      subject,
+      html,
+      attachments
+    });
+    console.log(`✅ Email sent via Nodemailer to: ${to}`);
+    return info;
+  } catch (err) {
+    console.error(`❌ Nodemailer failed to send email to ${to}:`, err.message);
+  }
+};
+
 // 1. Send Order Confirmation + PDF Invoice to Customer (After Payment)
 const sendOrderConfirmationEmail = async (order, invoicePath) => {
   const customerEmail = (order.customer && order.customer.email) ? order.customer.email : null;
@@ -26,7 +106,7 @@ const sendOrderConfirmationEmail = async (order, invoicePath) => {
     .join('');
 
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: customerEmail,
       subject: `🎂 Order Confirmed & Receipt! ${order.orderId} — Hooda's Bakery`,
@@ -84,7 +164,7 @@ const sendAdminNotificationEmail = async (order) => {
     const customerPhone = (order.customer && order.customer.phone) ? order.customer.phone : 'N/A';
     const itemsSummary = (order.items || []).map(i => `${i.productName} (${i.sizeKg} ${getItemUnit(i)} @ ₹${i.pricePerKg}/${getItemUnit(i)} = ₹${i.subtotal})`).join(', ');
 
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: adminMail,
       subject: `💰 Paid Order Alert: ${order.orderId} — ₹${order.total}`,
@@ -113,7 +193,7 @@ const sendFeedbackRequestEmail = async (order) => {
 
   const feedbackUrl = `${process.env.FRONTEND_URL || 'https://hoodas-bakery.vercel.app'}/feedback.html?orderId=${order._id}`;
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: customerEmail,
       subject: `How was your order from Hooda's Bakery? 🌟 — ${order.orderId}`,
@@ -146,7 +226,7 @@ const sendFeedbackRequestEmail = async (order) => {
 const sendPaymentFailedEmail = async (customerEmail, customerName, orderId) => {
   if (!customerEmail) return;
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: customerEmail,
       subject: `Payment Issue — Order ${orderId}`,
@@ -168,7 +248,7 @@ const sendPaymentFailedEmail = async (customerEmail, customerName, orderId) => {
 const sendChatbotLeadAdminEmail = async (lead) => {
   const adminMail = getAdminEmail();
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: adminMail,
       subject: `🆕 New Chatbot Lead: ${lead.name || 'Visitor'} — Hooda's Bakery`,
@@ -206,7 +286,7 @@ const sendChatbotLeadCustomerEmail = async (lead) => {
   const paymentUrl = `${baseUrl}/order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}&address=${addressParam}&timeSlot=${timeSlotParam}&items=${itemsParam}`;
 
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: lead.email,
       subject: `🎂 Order Request Received! — Hooda's Bakery`,
@@ -250,7 +330,7 @@ const sendChatbotLeadCustomerEmail = async (lead) => {
 const sendWhatsAppLeadAdminEmail = async (lead) => {
   const adminMail = getAdminEmail();
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: adminMail,
       subject: `💬 WhatsApp Inquiry Lead Alert — Hooda's Bakery`,
@@ -292,7 +372,7 @@ const sendWhatsAppLeadCustomerEmail = async (lead) => {
   const paymentUrl = `${baseUrl}/order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}`;
 
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: lead.email,
       subject: `👋 Thanks for reaching out to Hooda's Bakery!`,
@@ -329,7 +409,7 @@ const sendWhatsAppLeadCustomerEmail = async (lead) => {
 const sendManualCheckoutLeadAdminEmail = async (lead, order) => {
   const adminMail = getAdminEmail();
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: adminMail,
       subject: `🆕 New Website Lead Alert: ${lead.name || 'Customer'} — Hooda's Bakery`,
@@ -366,7 +446,7 @@ const sendManualCheckoutLeadCustomerEmail = async (lead, order) => {
   const paymentUrl = `${baseUrl}/order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}&address=${addressParam}&items=${itemsParam}`;
 
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: lead.email,
       subject: `🎂 Order Inquiry Received! — Hooda's Bakery`,
@@ -405,7 +485,7 @@ const sendManualCheckoutLeadCustomerEmail = async (lead, order) => {
 const sendChatbotVisitorAdminEmail = async ({ customerName, message }) => {
   const adminMail = getAdminEmail();
   try {
-    await transporter.sendMail({
+    await sendMail({
       from: getDefaultFrom(),
       to: adminMail,
       subject: `💬 New Chatbot Visitor Alert — Hooda's Bakery`,
