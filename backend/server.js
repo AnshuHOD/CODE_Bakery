@@ -75,7 +75,7 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/customers', customerRoutes);
 
 // Health check route
-app.get('/health', (req, res) => res.json({ status: 'Bakery server is running 🎂', version: '1.0.5 - resend-brevo-http-email-support' }));
+app.get('/health', (req, res) => res.json({ status: 'Bakery server is running 🎂', version: '1.0.6 - resend-api-live' }));
 
 // 404 handler
 app.use('*', (req, res) => res.status(404).json({ message: 'Route not found' }));
