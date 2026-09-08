@@ -9,13 +9,14 @@ const rawPass = process.env.EMAIL_PASS || 'tkublahmfelgcsyf';
 const emailPass = rawPass.replace(/\s+/g, '');
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  service: 'gmail',
   auth: {
     user: emailUser,
     pass: emailPass,
   },
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 5000,
   tls: {
     rejectUnauthorized: false
   }
