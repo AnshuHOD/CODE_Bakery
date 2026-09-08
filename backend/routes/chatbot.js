@@ -2,12 +2,17 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const Lead = require('../models/Lead');
-const { sendChatbotLeadAdminEmail, sendChatbotLeadCustomerEmail } = require('../services/emailService');
+const { sendChatbotLeadAdminEmail, sendChatbotLeadCustomerEmail, sendChatbotVisitorAdminEmail } = require('../services/emailService');
 const path = require('path');
 const fs = require('fs');
 
 router.post('/chat', async (req, res) => {
-  const { message, customerName, languagePreference } = req.body;
+  const { message, customerName, languagePreference, history } = req.body;
+
+  // Trigger initial Chatbot Visitor Email to Admin on first text
+  if (!history || (Array.isArray(history) && history.length === 0)) {
+    sendChatbotVisitorAdminEmail({ customerName, message }).catch(console.error);
+  }
   
   if (!process.env.GEMINI_API_KEY) {
     return res.json({
@@ -135,9 +140,72 @@ ${menuContext || "Premium Chocolate Truffle Cake, Blueberry Cheesecake Slice, Ar
     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
       let reply = data.candidates[0].content.parts[0].text;
 
+      // Helper function to extract missing lead fields from conversation history and reply text
+      const extractLeadDetails = (replyText, chatHistory = [], currentMsg = '', custName = '') => {
+        const allTexts = [...chatHistory.map(h => h.text || ''), currentMsg, replyText].join("\n");
+        
+        // 1. Email extraction (matches email addresses in history or reply)
+        const emailMatches = allTexts.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi);
+        const extractedEmail = emailMatches && emailMatches.length > 0 ? emailMatches[emailMatches.length - 1].toLowerCase().trim() : '';
+
+        // 2. Phone extraction (10-digit Indian numbers starting with 6, 7, 8, 9)
+        const phoneMatches = allTexts.match(/\b[6-9]\d{9}\b/g);
+        const extractedPhone = phoneMatches && phoneMatches.length > 0 ? phoneMatches[phoneMatches.length - 1] : '';
+
+        // 3. Name extraction
+        let extractedName = (custName && custName.trim()) ? custName.trim() : '';
+        if (!extractedName || ['valued customer', 'customer', 'visitor', 'guest'].includes(extractedName.toLowerCase())) {
+          const thankNameMatch = replyText.match(/(?:Thank you|Thanks|धन्यवाद|शुक्रिया),?\s*([A-Z][a-zA-Z]+|[\u0900-\u097F]+)/i);
+          if (thankNameMatch && thankNameMatch[1]) {
+            extractedName = thankNameMatch[1].trim();
+          }
+        }
+        if (!extractedName) extractedName = 'Valued Customer';
+
+        // 4. Items extraction
+        let extractedItems = '';
+        const itemMatch = replyText.match(/(?:order for|noted down your order for|ऑर्डर|order)\s+([^.\n!]+?)(?:\s+to be delivered|\s+delivered|\s+right now|\s+I am passing|\s+within|\.|$)/i);
+        if (itemMatch && itemMatch[1]) {
+          extractedItems = itemMatch[1].trim();
+        }
+        if (!extractedItems) extractedItems = 'Bakery Items';
+
+        // 5. Address extraction
+        let extractedAddress = '';
+        const addressMatch = replyText.match(/(?:delivered to|address:?|पता:?)\s+([^.\n!]+?)(?:\.|\s+I am passing|\s+They will|\s+within|\n|$)/i);
+        if (addressMatch && addressMatch[1]) {
+          extractedAddress = addressMatch[1].trim();
+        }
+
+        return {
+          name: extractedName,
+          email: extractedEmail,
+          phone: extractedPhone,
+          items: extractedItems,
+          address: extractedAddress,
+          timeSlot: ''
+        };
+      };
+
       // Extract and process structured order booking payload if present
       const orderPayloadMatch = reply.match(/\|ORDER_DATA:([\s\S]*?)\|\|/);
-      const isOrderSummary = reply.toLowerCase().includes("noted down your order") || reply.toLowerCase().includes("baking team") || reply.toLowerCase().includes("confirm the payment");
+      const codeBlockJsonMatch = reply.match(/```(?:json)?\s*(\{[\s\S]*?"items"[\s\S]*?\})\s*```/);
+      
+      const lowerReply = reply.toLowerCase();
+      const isOrderSummary = 
+        orderPayloadMatch ||
+        codeBlockJsonMatch ||
+        lowerReply.includes("noted down your order") ||
+        lowerReply.includes("baking team") ||
+        lowerReply.includes("confirm the payment") ||
+        lowerReply.includes("confirm delivery") ||
+        lowerReply.includes("contact you on") ||
+        lowerReply.includes("order request") ||
+        lowerReply.includes("ऑर्डर नोट") ||
+        lowerReply.includes("बेकिंग टीम") ||
+        lowerReply.includes("पेमेंट") ||
+        lowerReply.includes("order summary") ||
+        (lowerReply.includes("thank you") && lowerReply.includes("order"));
 
       let parsedLead = null;
 
@@ -148,15 +216,28 @@ ${menuContext || "Premium Chocolate Truffle Cake, Blueberry Cheesecake Slice, Ar
         } catch (err) {
           console.error("[Chatbot] Failed to parse completed order payload:", err.message);
         }
-      } else if (isOrderSummary) {
-        // Fallback parsing if Gemini omitted the JSON block but outputted the summary text
-        parsedLead = {
-          name: customerName || 'Valued Customer',
-          phone: '',
-          email: '',
-          items: '',
-          address: ''
-        };
+      } else if (codeBlockJsonMatch && codeBlockJsonMatch[1]) {
+        try {
+          parsedLead = JSON.parse(codeBlockJsonMatch[1].trim());
+          reply = reply.replace(/```(?:json)?\s*\{[\s\S]*?\}\s*```/g, "").trim();
+        } catch (err) {
+          console.error("[Chatbot] Failed to parse codeblock order payload:", err.message);
+        }
+      }
+
+      if (isOrderSummary) {
+        // Fallback / merge regex extraction from chat history if fields are missing
+        const extractedFallback = extractLeadDetails(reply, history, message, customerName);
+        if (!parsedLead) {
+          parsedLead = extractedFallback;
+        } else {
+          // Merge missing properties
+          parsedLead.name = parsedLead.name || extractedFallback.name;
+          parsedLead.email = parsedLead.email || extractedFallback.email;
+          parsedLead.phone = parsedLead.phone || extractedFallback.phone;
+          parsedLead.items = parsedLead.items || extractedFallback.items;
+          parsedLead.address = parsedLead.address || extractedFallback.address;
+        }
       }
 
       if (parsedLead) {
@@ -171,7 +252,7 @@ ${menuContext || "Premium Chocolate Truffle Cake, Blueberry Cheesecake Slice, Ar
           source: 'website'
         });
         await newLead.save().catch(console.error);
-        console.log(`[Chatbot] Saved new booking Lead to DB: ${newLead._id}`);
+        console.log(`[Chatbot] Saved new booking Lead to DB: ${newLead._id} (${parsedLead.name}, ${parsedLead.email}, ${parsedLead.phone})`);
 
         // Build URL query params to auto-fill checkout page
         const nameParam = encodeURIComponent(parsedLead.name || customerName || '');
@@ -189,6 +270,7 @@ ${menuContext || "Premium Chocolate Truffle Cake, Blueberry Cheesecake Slice, Ar
         }
 
         // Asynchronously dispatch email alerts (non-blocking)
+        console.log(`[Chatbot] Dispatching email alerts to Admin (${process.env.EMAIL_USER}) and Customer (${parsedLead.email || 'None'})`);
         sendChatbotLeadAdminEmail(parsedLead).catch(console.error);
         if (parsedLead.email) {
           sendChatbotLeadCustomerEmail(parsedLead).catch(console.error);

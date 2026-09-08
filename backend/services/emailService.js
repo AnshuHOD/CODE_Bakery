@@ -285,6 +285,12 @@ const sendWhatsAppLeadAdminEmail = async (lead) => {
 // 8. Send WhatsApp Lead Confirmation to Customer
 const sendWhatsAppLeadCustomerEmail = async (lead) => {
   if (!lead.email) return;
+  const nameParam = encodeURIComponent(lead.name || 'Valued Customer');
+  const emailParam = encodeURIComponent(lead.email || '');
+  const phoneParam = encodeURIComponent(lead.phone || '');
+  const baseUrl = process.env.FRONTEND_URL || 'https://hoodas-bakery.vercel.app';
+  const paymentUrl = `${baseUrl}/order.html?name=${nameParam}&email=${emailParam}&phone=${phoneParam}`;
+
   try {
     await transporter.sendMail({
       from: getDefaultFrom(),
@@ -298,10 +304,15 @@ const sendWhatsAppLeadCustomerEmail = async (lead) => {
           </div>
           <div style="padding: 24px; color: #333;">
             <p>Hi <strong>${lead.name || 'Valued Customer'}</strong>,</p>
-            <p>Thank you for visiting Hooda's Bakery! We noticed you connected with us via WhatsApp. Our team has received your inquiry and will respond to you shortly on WhatsApp or Phone (<strong>${lead.phone}</strong>).</p>
-            <p>If you'd like to browse our fresh baked goods menu or order directly online, click below:</p>
-            <p style="text-align: center; margin: 24px 0;">
-              <a href="${process.env.FRONTEND_URL || 'https://hoodas-bakery.vercel.app'}/menu.html" style="background: #075E54; color: white; padding: 12px 28px; border-radius: 50px; text-decoration: none; font-weight: bold;">Explore Today's Menu →</a>
+            <p>Thank you for visiting Hooda's Bakery! We noticed you connected with us via WhatsApp. Our team has received your inquiry and will respond to you shortly on WhatsApp or Phone (<strong>${lead.phone || 'N/A'}</strong>).</p>
+            
+            <div style="background: #E8F8F5; padding: 20px; border-radius: 12px; border: 1px solid #128C7E; text-align: center; margin: 24px 0;">
+              <p style="margin-top: 0; font-weight: bold; color: #075E54;">Ready to place your order right away? Click the button below to proceed to our secure checkout page:</p>
+              <a href="${paymentUrl}" style="display: inline-block; background: #075E54; color: white; padding: 12px 28px; border-radius: 50px; text-decoration: none; font-weight: bold; font-family: sans-serif; box-shadow: 0 4px 15px rgba(7,94,84,0.3); margin-top: 10px;">💳 Click Here to Order & Pay Online →</a>
+            </div>
+
+            <p style="text-align: center; margin: 16px 0;">
+              <a href="${baseUrl}/menu.html" style="color: #075E54; font-weight: bold; text-decoration: underline;">Or Browse Today's Full Menu →</a>
             </p>
             <p>With love,<br><strong>Hooda's Bakery Team</strong> 🎂</p>
           </div>
@@ -390,6 +401,31 @@ const sendManualCheckoutLeadCustomerEmail = async (lead, order) => {
   }
 };
 
+// 11. Send Initial Chatbot Visitor Alert to Admin
+const sendChatbotVisitorAdminEmail = async ({ customerName, message }) => {
+  const adminMail = getAdminEmail();
+  try {
+    await transporter.sendMail({
+      from: getDefaultFrom(),
+      to: adminMail,
+      subject: `💬 New Chatbot Visitor Alert — Hooda's Bakery`,
+      html: `
+        <h2>💬 New Chatbot Conversation Started!</h2>
+        <p>A visitor has initiated a conversation with Hooda's BakeBot on your website.</p>
+        <div style="background: #F5EBE6; padding: 16px; border-radius: 8px; border: 1px solid #D97766;">
+          <p><strong>Customer Name:</strong> ${customerName || 'Website Visitor'}</p>
+          <p><strong>Initial Message:</strong> "${message}"</p>
+          <p><strong>Timestamp:</strong> ${new Date().toLocaleString('en-IN')}</p>
+        </div>
+        <p><a href="${process.env.ADMIN_URL || 'https://hoodas-bakery-admin.vercel.app'}/leads" style="display:inline-block; background:#3E2723; color:white; padding:10px 20px; border-radius:4px; text-decoration:none;">Open Lead Dashboard →</a></p>
+      `
+    });
+    console.log(`✅ Chatbot Visitor alert email sent to Admin (${adminMail})`);
+  } catch (err) {
+    console.error("❌ Failed to send chatbot visitor alert email to admin:", err.message);
+  }
+};
+
 module.exports = {
   sendOrderConfirmationEmail,
   sendAdminNotificationEmail,
@@ -400,5 +436,6 @@ module.exports = {
   sendWhatsAppLeadAdminEmail,
   sendWhatsAppLeadCustomerEmail,
   sendManualCheckoutLeadAdminEmail,
-  sendManualCheckoutLeadCustomerEmail
+  sendManualCheckoutLeadCustomerEmail,
+  sendChatbotVisitorAdminEmail
 };
