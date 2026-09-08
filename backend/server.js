@@ -75,7 +75,7 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/customers', customerRoutes);
 
 // Health check route
-app.get('/health', (req, res) => res.json({ status: 'Bakery server is running 🎂', version: '1.0.2 - email-diagnostics' }));
+app.get('/health', (req, res) => res.json({ status: 'Bakery server is running 🎂', version: '1.0.3 - email-cloud-fix' }));
 
 // 404 handler
 app.use('*', (req, res) => res.status(404).json({ message: 'Route not found' }));
