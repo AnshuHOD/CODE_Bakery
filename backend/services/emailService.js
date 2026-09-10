@@ -14,25 +14,56 @@ const sendMail = async ({ to, subject, html, attachments = [] }) => {
   const brevoKey = process.env.BREVO_API_KEY;
   const adminMail = getAdminEmail();
 
+  // Prepare base64 attachments for Resend / Brevo APIs
+  let apiAttachments = undefined;
+  if (attachments && attachments.length > 0) {
+    const pathModule = require('path');
+    apiAttachments = attachments.map(att => {
+      try {
+        if (att.path && fs.existsSync(att.path)) {
+          const fileBuffer = fs.readFileSync(att.path);
+          return {
+            filename: att.filename || pathModule.basename(att.path),
+            content: fileBuffer.toString('base64')
+          };
+        } else if (att.content) {
+          const contentStr = typeof att.content === 'string' ? att.content : att.content.toString('base64');
+          return {
+            filename: att.filename || 'invoice.pdf',
+            content: contentStr
+          };
+        }
+      } catch (attErr) {
+        console.error("Error formatting attachment for email API:", attErr.message);
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
   // 1. Try Resend HTTPS API (Port 443 — Never blocked by Render cloud firewall)
   if (resendKey) {
     try {
+      const resendPayload = {
+        from: "Hooda's Bakery <onboarding@resend.dev>",
+        to: [to],
+        subject: subject,
+        html: html
+      };
+      if (apiAttachments && apiAttachments.length > 0) {
+        resendPayload.attachments = apiAttachments;
+      }
+
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${resendKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          from: "Hooda's Bakery <onboarding@resend.dev>",
-          to: [to],
-          subject: subject,
-          html: html
-        })
+        body: JSON.stringify(resendPayload)
       });
       const data = await res.json();
       if (res.ok) {
-        console.log(`✅ Email sent via Resend HTTPS API to: ${to}`);
+        console.log(`✅ Email sent via Resend HTTPS API to: ${to} (Attachments: ${apiAttachments ? apiAttachments.length : 0})`);
         return data;
       } else {
         console.error(`❌ Resend API Error:`, JSON.stringify(data));
@@ -45,18 +76,26 @@ const sendMail = async ({ to, subject, html, attachments = [] }) => {
   // 2. Try Brevo HTTPS API (Port 443 — Never blocked by Render cloud firewall)
   if (brevoKey) {
     try {
+      const brevoPayload = {
+        sender: { name: "Hooda's Bakery", email: adminMail },
+        to: [{ email: to }],
+        subject: subject,
+        htmlContent: html
+      };
+      if (apiAttachments && apiAttachments.length > 0) {
+        brevoPayload.attachment = apiAttachments.map(a => ({
+          name: a.filename,
+          content: a.content
+        }));
+      }
+
       const res = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
           'api-key': brevoKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          sender: { name: "Hooda's Bakery", email: adminMail },
-          to: [{ email: to }],
-          subject: subject,
-          htmlContent: html
-        })
+        body: JSON.stringify(brevoPayload)
       });
       const data = await res.json();
       if (res.ok) {
@@ -88,7 +127,7 @@ const sendMail = async ({ to, subject, html, attachments = [] }) => {
 
 // 1. Send Order Confirmation + PDF Invoice to Customer (After Payment)
 const sendOrderConfirmationEmail = async (order, invoicePath) => {
-  const customerEmail = (order.customer && order.customer.email) ? order.customer.email : null;
+  const customerEmail = (order.customer && order.customer.email) ? order.customer.email : (order.customerEmail || null);
   if (!customerEmail) {
     console.error("❌ Cannot send order confirmation email: Customer email is missing.");
     return;
@@ -100,7 +139,7 @@ const sendOrderConfirmationEmail = async (order, invoicePath) => {
     return (cat === 'cake' || name.includes('cake') || (i.sizeKg && i.sizeKg % 1 !== 0)) ? 'kg' : 'pc';
   };
 
-  const customerName = (order.customer && order.customer.name) ? order.customer.name : 'Valued Customer';
+  const customerName = (order.customer && order.customer.name) ? order.customer.name : (order.customerName || 'Valued Customer');
   const itemsList = (order.items || [])
     .map(i => `<li>${i.productName} - ${i.sizeKg} ${getItemUnit(i)} @ ₹${i.pricePerKg}/${getItemUnit(i)} = <strong>₹${i.subtotal}</strong></li>`)
     .join('');

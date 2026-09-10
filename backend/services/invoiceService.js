@@ -50,21 +50,36 @@ const generateInvoice = (order) => {
     // Divider Line
     doc.strokeColor('#EFE7DE').lineWidth(1).moveTo(50, 160).lineTo(545, 160).stroke();
 
+    // Safe resolution of customer details & address
+    const custName = (order.customer && order.customer.name) || order.customerName || 'Valued Customer';
+    const custEmail = (order.customer && order.customer.email) || order.customerEmail || 'N/A';
+    const custPhone = (order.customer && order.customer.phone) || order.customerPhone || 'N/A';
+
+    let addrStr = 'Specified at Checkout';
+    if (typeof order.deliveryAddress === 'string' && order.deliveryAddress.trim()) {
+      addrStr = order.deliveryAddress.trim();
+    } else if (order.deliveryAddress && typeof order.deliveryAddress === 'object') {
+      const street = order.deliveryAddress.street || '';
+      const city = order.deliveryAddress.city || 'Rohtak';
+      const pin = order.deliveryAddress.pincode || '';
+      addrStr = `${street}${street ? ', ' : ''}${city}${pin ? ' - ' + pin : ''}`;
+    }
+
     // --- Side-by-Side Metadata Columns ---
     // Left column: Bill To
     doc.fillColor('#3D2620').fontSize(10).font('Helvetica-Bold').text('BILL TO:', 50, 175);
     doc.font('Helvetica').fillColor('#4A3530').fontSize(9)
-      .text(order.customer.name, 50, 190, { width: 230 })
-      .text(order.customer.email, 50, 203, { width: 230 })
-      .text(order.customer.phone, 50, 216, { width: 230 });
+      .text(custName, 50, 190, { width: 230 })
+      .text(custEmail, 50, 203, { width: 230 })
+      .text(custPhone, 50, 216, { width: 230 });
 
     // Right column: Delivery Details
     doc.fillColor('#3D2620').fontSize(10).font('Helvetica-Bold').text('ORDER DETAILS:', 300, 175);
     doc.font('Helvetica').fillColor('#4A3530').fontSize(9)
-      .text(`Invoice No: ${order.orderId}`, 300, 190, { width: 245 })
-      .text(`Order Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 300, 203, { width: 245 })
-      .text(`Address: ${order.deliveryAddress.street}, ${order.deliveryAddress.city} - ${order.deliveryAddress.pincode}`, 300, 216, { width: 245 })
-      .text(`Delivery Date: ${new Date(order.deliveryDate).toLocaleDateString('en-IN', { dateStyle: 'long' })}`, 300, 242, { width: 245 });
+      .text(`Invoice No: ${order.orderId || 'ORD-BAKERY'}`, 300, 190, { width: 245 })
+      .text(`Order Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')}`, 300, 203, { width: 245 })
+      .text(`Address: ${addrStr}`, 300, 216, { width: 245 })
+      .text(`Delivery Date: ${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('en-IN', { dateStyle: 'long' }) : 'As Scheduled'}`, 300, 242, { width: 245 });
 
     // --- Items Table ---
     const tableTop = 275;
